@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register — Vibe & View</title>
+<link rel="stylesheet" href="css/vnv.css">
+<style>
+.register-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+@media(max-width:900px) { .register-layout { grid-template-columns: 1fr; } }
+
+.register-left {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 60px 48px;
+  display: flex; flex-direction: column; justify-content: center;
+  position: relative; overflow: hidden;
+}
+@media(max-width:900px) { .register-left { display: none; } }
+
+.reg-left-glow {
+  position: absolute;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(255,107,0,0.2) 0%, transparent 70%);
+  bottom: -100px; right: -100px; pointer-events: none;
+}
+.reg-left-brand { font-family: var(--font-display); font-size: 3rem; letter-spacing: 4px; margin-bottom: 8px; }
+.reg-zone-preview { display: flex; flex-direction: column; gap: 12px; margin-top: 40px; }
+.reg-zone-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); cursor: pointer;
+  transition: all 0.2s;
+}
+.reg-zone-item.selected { border-color: var(--orange); background: var(--orange-dim); }
+.reg-zone-item:hover { border-color: var(--border-glow); }
+.reg-zone-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.reg-zone-item-name { font-weight: 600; font-size: 0.9rem; }
+.reg-zone-item-desc { font-size: 0.78rem; color: var(--text-3); }
+
+.register-right {
+  padding: 60px 48px;
+  display: flex; flex-direction: column; justify-content: center;
+  max-width: 560px; width: 100%; margin: 0 auto;
+}
+@media(max-width:600px) { .register-right { padding: 32px 20px; } }
+
+.reg-header { margin-bottom: 32px; }
+.reg-header .back { display: inline-flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 0.85rem; margin-bottom: 20px; transition: color 0.2s; }
+.reg-header .back:hover { color: var(--text); }
+
+/* Code verification step */
+.code-step { display: flex; flex-direction: column; gap: 24px; }
+.code-input-wrap { position: relative; }
+.code-input {
+  width: 100%;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 24px;
+  color: var(--text);
+  font-size: 1.1rem;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.code-input:focus { border-color: var(--orange); box-shadow: 0 0 0 4px var(--orange-dim); }
+.code-input.valid   { border-color: var(--success); box-shadow: 0 0 0 4px rgba(0,232,122,0.15); }
+.code-input.invalid { border-color: var(--error);   box-shadow: 0 0 0 4px rgba(255,59,92,0.15); }
+
+.code-verified {
+  background: rgba(0,232,122,0.08);
+  border: 1px solid rgba(0,232,122,0.3);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex; align-items: center; gap: 14px;
+}
+
+/* Partners toggle */
+.partners-toggle {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px 20px;
+  cursor: pointer; transition: all 0.2s;
+}
+.partners-toggle input[type=checkbox] { display:none; }
+.toggle-track {
+  width: 44px; height: 24px; background: var(--border);
+  border-radius: 100px; position: relative; transition: all 0.2s; flex-shrink: 0;
+}
+.toggle-track::after {
+  content: ''; position: absolute;
+  left: 3px; top: 3px;
+  width: 18px; height: 18px;
+  background: var(--text-3); border-radius: 50%;
+  transition: all 0.2s;
+}
+.partners-toggle.on .toggle-track { background: var(--orange); }
+.partners-toggle.on .toggle-track::after { left: 23px; background: white; }
+
+/* Person sections */
+.person-section { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; }
+.person-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+}
+.person-badge {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 700;
+}
+.person-badge.p1 { background: var(--orange-dim); color: var(--orange); border: 1px solid var(--orange); }
+.person-badge.p2 { background: var(--cyan-dim); color: var(--cyan); border: 1px solid var(--cyan); }
+
+/* Form fields */
+.register-form { display: flex; flex-direction: column; gap: 16px; }
+.interests-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.interest-tag {
+  padding: 6px 14px; border-radius: 100px;
+  border: 1px solid var(--border); background: var(--card);
+  font-size: 0.82rem; color: var(--text-2);
+  cursor: pointer; transition: all 0.15s;
+}
+.interest-tag.selected { border-color: var(--cyan); background: var(--cyan-dim); color: var(--cyan); }
+.interest-tag:hover { border-color: var(--border-glow); color: var(--text); }
+
+/* Success screen */
+.reg-success {
+  display: none; flex-direction: column; align-items: center;
+  text-align: center; gap: 20px; padding: 40px 0;
+}
+.reg-success.show { display: flex; }
+.success-circle {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: rgba(0,232,122,0.15);
+  border: 2px solid var(--success);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+  animation: resultPop 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+.seat-reveal {
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  letter-spacing: 4px;
+  color: var(--cyan);
+  animation: glow 2s ease-in-out infinite;
+}
+@keyframes glow { 0%,100%{text-shadow:0 0 20px var(--cyan-glow)} 50%{text-shadow:0 0 40px var(--cyan-glow), 0 0 80px var(--cyan-glow)} }
+</style>
+</head>
+<body>
+
+<div class="register-layout">
+  <!-- Left Panel -->
+  <div class="register-left">
+    <div class="reg-left-glow"></div>
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;color:var(--text-3);font-size:0.85rem;margin-bottom:32px">
+      ← Back to Home
+    </a>
+    <div class="reg-left-brand gradient-both">VnV</div>
+    <h2 style="margin-bottom:8px">Claim Your Seat</h2>
+    <p>Enter your code from the physical form to begin. Your seat will be assigned instantly.</p>
+
+    <div class="reg-zone-preview">
+      <div class="reg-zone-item" data-zone="PT">
+        <div class="reg-zone-dot" style="background:#FF6B00"></div>
+        <div>
+          <div class="reg-zone-item-name">Partners (PT)</div>
+          <div class="reg-zone-item-desc">Adjacent seats for couples</div>
+        </div>
+      </div>
+      <div class="reg-zone-item" data-zone="SR">
+        <div class="reg-zone-dot" style="background:#00D4FF"></div>
+        <div>
+          <div class="reg-zone-item-name">Searching (SR)</div>
+          <div class="reg-zone-item-desc">Gender-alternating seats</div>
+        </div>
+      </div>
+      <div class="reg-zone-item" data-zone="SC">
+        <div class="reg-zone-dot" style="background:#00E87A"></div>
+        <div>
+          <div class="reg-zone-item-name">Social (SC)</div>
+          <div class="reg-zone-item-desc">Mixed, open seating</div>
+        </div>
+      </div>
+      <div class="reg-zone-item" data-zone="SL">
+        <div class="reg-zone-dot" style="background:#FFB800"></div>
+        <div>
+          <div class="reg-zone-item-name">Solo (SL)</div>
+          <div class="reg-zone-item-desc">Individual chairs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="register-right">
+    <div class="reg-header">
+      <a href="index.html" class="back">← Back</a>
+      <h2>Registration</h2>
+      <p>Have your form with you. You'll need your access code.</p>
+    </div>
+
+    <!-- Steps -->
+    <div class="steps mb-24">
+      <div class="step active" id="step-1">
+        <div class="step-num">1</div>
+        <div class="step-label">Verify Code</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step-2">
+        <div class="step-num">2</div>
+        <div class="step-label">Your Details</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step-3">
+        <div class="step-num">3</div>
+        <div class="step-label">Done!</div>
+      </div>
+    </div>
+
+    <!-- Step 1: Code Verification -->
+    <div id="section-code" class="code-step">
+      <div class="form-group">
+        <label class="form-label">Your Access Code</label>
+        <div class="code-input-wrap">
+          <input type="text" id="code-input" class="code-input" placeholder="VNV2026SR..." maxlength="25" autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+        <p class="form-hint">The code printed on your physical form. Enter it manually or scan the QR.</p>
+      </div>
+
+      <div id="code-verified-box" class="code-verified hidden">
+        <span style="font-size:1.4rem">✅</span>
+        <div>
+          <div style="font-weight:700" id="verified-zone-name">Partners Zone</div>
+          <div style="font-size:0.85rem;color:var(--text-2)">Code verified — fill in your details below</div>
+        </div>
+      </div>
+
+      <div id="code-error-box" class="hidden" style="background:rgba(255,59,92,0.08);border:1px solid rgba(255,59,92,0.3);border-radius:var(--radius-lg);padding:16px;font-size:0.9rem;color:var(--error)"></div>
+
+      <!-- Partners toggle (only shown for PT codes) -->
+      <div id="partners-toggle-wrap" class="hidden">
+        <label class="partners-toggle" id="partners-toggle">
+          <input type="checkbox" id="is-partners">
+          <div class="toggle-track"></div>
+          <div>
+            <div style="font-weight:600;font-size:0.9rem">Registering as Partners</div>
+            <div style="font-size:0.78rem;color:var(--text-3)">You'll enter details for both people</div>
+          </div>
+        </label>
+      </div>
+
+      <button class="btn btn-primary btn-lg w-full" id="btn-verify">
+        Verify Code →
+      </button>
+
+      <div class="divider"></div>
+      <p class="text-center text-sm text-muted">
+        Already registered? <a href="profile.html" class="text-cyan">View your seat →</a>
+      </p>
+    </div>
+
+    <!-- Step 2: Registration Form -->
+    <div id="section-form" class="hidden">
+      <div id="form-content"></div>
+
+      <button class="btn btn-primary btn-lg w-full mt-24" id="btn-submit">
+        Complete Registration →
+      </button>
+
+      <button class="btn btn-ghost btn-sm mt-8" id="btn-back-to-code">
+        ← Change code
+      </button>
+    </div>
+
+    <!-- Step 3: Success -->
+    <div id="section-success" class="hidden">
+      <div class="reg-success show" id="success-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { API } from './js/api.js';
+import { toast, setLoading } from './js/utils.js';
+
+const INTERESTS = ['Music', 'Movies', 'Football', 'Cooking', 'Travel', 'Art', 'Gaming', 'Fashion', 'Fitness', 'Books', 'Photography', 'Dancing'];
+
+let verifiedCode = null;
+let verifiedCategory = null;
+let isPartners = false;
+let selectedInterests1 = [];
+let selectedInterests2 = [];
+
+// Step management
+function setStep(n) {
+  [1,2,3].forEach(i => {
+    const s = document.getElementById(`step-${i}`);
+    s.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+  });
+}
+
+// Build person form HTML
+function personFormHTML(prefix, label, badgeClass) {
+  return `
+    <div class="person-section mb-16">
+      <div class="person-header">
+        <div class="person-badge ${badgeClass}">${label[0]}</div>
+        <div style="font-weight:700">${label}</div>
+      </div>
+      <div class="register-form" id="form-${prefix}">
+        ${prefix === 'p2' ? `
+        <div class="form-group">
+          <label class="form-label">Access Code</label>
+          <input type="text" class="form-input font-mono" id="${prefix}-code" placeholder="VNV2026PT..." maxlength="25" style="text-transform:uppercase">
+        </div>` : ''}
+        <div class="form-grid">
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-input" id="${prefix}-name" placeholder="Your full name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" class="form-input" id="${prefix}-phone" placeholder="024XXXXXXX">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gender</label>
+            <select class="form-select" id="${prefix}-gender">
+              <option value="">Select</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Age Range</label>
+            <select class="form-select" id="${prefix}-age">
+              <option value="">Select</option>
+              <option value="18-24">18–24</option>
+              <option value="25-30">25–30</option>
+              <option value="31-40">31–40</option>
+              <option value="41+">41+</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Relationship Status</label>
+            <select class="form-select" id="${prefix}-status">
+              <option value="">Select</option>
+              <option value="SINGLE">Single</option>
+              <option value="IN_A_RELATIONSHIP">In a Relationship</option>
+              <option value="MARRIED">Married</option>
+              <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Personality</label>
+            <select class="form-select" id="${prefix}-personality">
+              <option value="">Select (optional)</option>
+              <option value="INTROVERT">Introvert</option>
+              <option value="EXTROVERT">Extrovert</option>
+              <option value="AMBIVERT">Ambivert</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Community Area</label>
+          <input type="text" class="form-input" id="${prefix}-area" placeholder="e.g. Odoben, Agona">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Interests (optional, pick up to 5)</label>
+          <div class="interests-grid" id="${prefix}-interests"></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderInterests(prefix, selectedArr) {
+  const grid = document.getElementById(`${prefix}-interests`);
+  if (!grid) return;
+  grid.innerHTML = INTERESTS.map(i => `
+    <div class="interest-tag${selectedArr.includes(i) ? ' selected' : ''}" data-interest="${i}">${i}</div>
+  `).join('');
+  grid.querySelectorAll('.interest-tag').forEach(tag => {
+    tag.onclick = () => {
+      const v = tag.dataset.interest;
+      const idx = selectedArr.indexOf(v);
+      if (idx > -1) { selectedArr.splice(idx, 1); tag.classList.remove('selected'); }
+      else if (selectedArr.length < 5) { selectedArr.push(v); tag.classList.add('selected'); }
+      else toast('Max 5 interests', 'warning');
+    };
+  });
+}
+
+// Verify code
+document.getElementById('btn-verify').onclick = async () => {
+  const code = document.getElementById('code-input').value.trim().toUpperCase();
+  if (!code) { toast('Enter your access code', 'error'); return; }
+  const btn = document.getElementById('btn-verify');
+  setLoading(btn, true, 'Verifying...');
+  try {
+    const data = await API.validateCode(code);
+    verifiedCode = code;
+    verifiedCategory = data.category;
+    document.getElementById('code-input').classList.add('valid');
+    document.getElementById('verified-zone-name').textContent = `${verifiedCategory.name} Zone — ${verifiedCategory.zoneLabel}`;
+    document.getElementById('code-verified-box').classList.remove('hidden');
+    document.getElementById('code-error-box').classList.add('hidden');
+
+    if (verifiedCategory.slug === 'PT') {
+      document.getElementById('partners-toggle-wrap').classList.remove('hidden');
+    }
+
+    // Auto-advance after short delay
+    setTimeout(() => showFormStep(), 600);
+  } catch(e) {
+    document.getElementById('code-input').classList.add('invalid');
+    document.getElementById('code-error-box').textContent = e.message;
+    document.getElementById('code-error-box').classList.remove('hidden');
+    toast(e.message, 'error');
+  } finally { setLoading(btn, false); }
+};
+
+// Partners toggle
+document.getElementById('partners-toggle').onclick = function() {
+  isPartners = !isPartners;
+  this.classList.toggle('on', isPartners);
+  document.getElementById('is-partners').checked = isPartners;
+};
+
+function showFormStep() {
+  document.getElementById('section-code').classList.add('hidden');
+  document.getElementById('section-form').classList.remove('hidden');
+  setStep(2);
+
+  const content = document.getElementById('form-content');
+  const isPT = verifiedCategory.slug === 'PT';
+
+  if (isPT) {
+    content.innerHTML = `
+      <p class="text-muted text-sm mb-16">Both partners must register together. Each person needs their own PT code.</p>
+      ${personFormHTML('p1', 'Person 1', 'p1')}
+      ${personFormHTML('p2', 'Person 2', 'p2')}
+    `;
+    document.getElementById('p1-code').value = verifiedCode;
+    document.getElementById('p1-code') && (document.getElementById('p1-code').readOnly = true);
+    renderInterests('p1', selectedInterests1);
+    renderInterests('p2', selectedInterests2);
+  } else {
+    content.innerHTML = personFormHTML('p1', 'Your Details', 'p1');
+    renderInterests('p1', selectedInterests1);
+  }
+}
+
+document.getElementById('btn-back-to-code').onclick = () => {
+  document.getElementById('section-form').classList.add('hidden');
+  document.getElementById('section-code').classList.remove('hidden');
+  setStep(1);
+  verifiedCode = null; verifiedCategory = null;
+  document.getElementById('code-input').value = '';
+  document.getElementById('code-input').className = 'code-input';
+  document.getElementById('code-verified-box').classList.add('hidden');
+  document.getElementById('partners-toggle-wrap').classList.add('hidden');
+};
+
+function getPersonData(prefix, code) {
+  return {
+    code,
+    fullName:           document.getElementById(`${prefix}-name`)?.value.trim(),
+    phoneNumber:        document.getElementById(`${prefix}-phone`)?.value.trim(),
+    gender:             document.getElementById(`${prefix}-gender`)?.value,
+    ageRange:           document.getElementById(`${prefix}-age`)?.value,
+    communityArea:      document.getElementById(`${prefix}-area`)?.value.trim(),
+    relationshipStatus: document.getElementById(`${prefix}-status`)?.value,
+    personalityType:    document.getElementById(`${prefix}-personality`)?.value || undefined,
+    interests:          prefix === 'p1' ? selectedInterests1 : selectedInterests2,
+  };
+}
+
+function validatePerson(d, label) {
+  if (!d.fullName)           throw new Error(`${label}: Full name required`);
+  if (!d.phoneNumber)        throw new Error(`${label}: Phone number required`);
+  if (!d.gender)             throw new Error(`${label}: Gender required`);
+  if (!d.ageRange)           throw new Error(`${label}: Age range required`);
+  if (!d.communityArea)      throw new Error(`${label}: Community area required`);
+  if (!d.relationshipStatus) throw new Error(`${label}: Relationship status required`);
+}
+
+// Submit
+document.getElementById('btn-submit').onclick = async () => {
+  const btn = document.getElementById('btn-submit');
+  setLoading(btn, true, 'Registering...');
+
+  try {
+    const isPT = verifiedCategory.slug === 'PT';
+
+    if (isPT) {
+      const p2code = document.getElementById('p2-code')?.value.trim().toUpperCase();
+      if (!p2code) throw new Error('Person 2 code required');
+      const d1 = getPersonData('p1', verifiedCode);
+      const d2 = getPersonData('p2', p2code);
+      validatePerson(d1, 'Person 1');
+      validatePerson(d2, 'Person 2');
+
+      const result = await API.registerPartners({ person1: d1, person2: d2 });
+      localStorage.setItem('vnv_participant_token', result.person1.token);
+      showSuccess([
+        { name: result.person1.participant.fullName },
+        { name: result.person2.participant.fullName }
+      ], null, true);
+    } else {
+      const d = getPersonData('p1', verifiedCode);
+      validatePerson(d, 'Registration');
+      const result = await API.register(d);
+      localStorage.setItem('vnv_participant_token', result.token);
+      showSuccess([{ name: result.participant.fullName }], null, false);
+      // Get seat from profile
+      try {
+        const profile = await API.getProfile();
+        showSuccess([{ name: result.participant.fullName }], profile.seatAssignment?.seat?.seatNumber, false);
+      } catch(e) {}
+    }
+  } catch(e) {
+    toast(e.message, 'error');
+  } finally { setLoading(btn, false); }
+};
+
+function showSuccess(people, seat, isPartners) {
+  document.getElementById('section-form').classList.add('hidden');
+  document.getElementById('section-success').classList.remove('hidden');
+  setStep(3);
+
+  const names = people.map(p => p.name).join(' & ');
+  document.getElementById('success-content').innerHTML = `
+    <div class="success-circle">🎉</div>
+    <h2>You're In!</h2>
+    <p class="text-muted">Welcome, <strong>${names}</strong>!</p>
+    ${seat ? `
+      <div>
+        <p class="text-xs text-muted mb-4" style="text-transform:uppercase;letter-spacing:1px">Your Seat</p>
+        <div class="seat-reveal">${seat}</div>
+      </div>` : ''}
+    <p class="text-sm text-muted" style="max-width:320px">
+      Show your access code at the venue entrance. Staff will scan it and confirm your seat.
+    </p>
+    <div class="flex gap-12 flex-wrap justify-center mt-16">
+      <a href="profile.html" class="btn btn-cyan">View My Seat →</a>
+      <a href="index.html" class="btn btn-ghost">Back to Home</a>
+    </div>
+  `;
+}
+
+// Code input — auto uppercase and debounced verify hint
+document.getElementById('code-input').addEventListener('input', function() {
+  this.value = this.value.toUpperCase();
+  this.classList.remove('valid', 'invalid');
+  document.getElementById('code-verified-box').classList.add('hidden');
+  document.getElementById('code-error-box').classList.add('hidden');
+});
+
+// Enter key on code input
+document.getElementById('code-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-verify').click();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Staff Scanner — VnV</title>
+<link rel="stylesheet" href="../css/vnv.css">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+* { -webkit-tap-highlight-color: transparent; }
+body { background: var(--black); overflow-x: hidden; }
+
+.scanner-page {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  max-width: 480px; margin: 0 auto;
+}
+
+/* ── Header ── */
+.scanner-header {
+  padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky; top: 0; z-index: 10;
+}
+.scanner-header .brand { font-family: var(--font-display); font-size: 1.4rem; letter-spacing: 3px; }
+.scanner-status { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-2); }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; }
+.status-dot.online  { background: var(--success); animation: pulse 2s infinite; }
+.status-dot.offline { background: var(--error); }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+/* ── Mode Toggle ── */
+.mode-toggle {
+  margin: 20px 20px 0;
+  display: grid; grid-template-columns: 1fr 1fr;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 4px; gap: 4px;
+}
+.mode-btn {
+  padding: 12px 10px;
+  border-radius: var(--radius-lg);
+  font-size: 0.82rem; font-weight: 700;
+  color: var(--text-3);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  line-height: 1.2; cursor: pointer;
+}
+.mode-btn .mode-icon { font-size: 1.4rem; }
+.mode-btn.active.sell    { background: var(--orange-dim); color: var(--orange); border-color: rgba(255,107,0,0.3); }
+.mode-btn.active.checkin { background: rgba(0,232,122,0.1); color: var(--success); border-color: rgba(0,232,122,0.3); }
+.mode-label-sub { font-size: 0.68rem; font-weight: 500; opacity: 0.8; }
+
+/* ── Mode Banner ── */
+.mode-banner {
+  margin: 12px 20px 0;
+  padding: 10px 16px;
+  border-radius: var(--radius-lg);
+  font-size: 0.82rem; font-weight: 600;
+  text-align: center; transition: all 0.2s;
+}
+.mode-banner.sell    { background: var(--orange-dim); color: var(--orange); border: 1px solid rgba(255,107,0,0.2); }
+.mode-banner.checkin { background: rgba(0,232,122,0.08); color: var(--success); border: 1px solid rgba(0,232,122,0.2); }
+
+/* ── Input ── */
+.input-section { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.code-field    { display: flex; gap: 10px; align-items: center; }
+.scanner-code-input {
+  flex: 1; background: var(--surface);
+  border: 2px solid var(--border); border-radius: var(--radius-lg);
+  padding: 16px 18px; color: var(--text);
+  font-size: 1rem; font-family: 'Courier New', monospace;
+  letter-spacing: 2px; text-transform: uppercase; transition: all 0.2s;
+}
+.scanner-code-input:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-dim); }
+.btn-camera {
+  background: var(--card); border: 2px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px 18px;
+  color: var(--text-2); font-size: 1.2rem;
+  transition: all 0.15s; flex-shrink: 0; cursor: pointer;
+}
+.btn-camera.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,229,255,0.1); }
+.btn-camera:active { transform: scale(0.95); }
+.btn-submit {
+  border-radius: var(--radius-lg); padding: 16px 20px;
+  color: white; font-size: 1.3rem; font-weight: 700;
+  transition: all 0.15s; flex-shrink: 0; cursor: pointer;
+}
+.btn-submit.sell    { background: linear-gradient(135deg, var(--orange), var(--orange-2)); box-shadow: 0 4px 20px var(--orange-glow); }
+.btn-submit.checkin { background: linear-gradient(135deg, #00e87a, #00c461); box-shadow: 0 4px 20px rgba(0,232,122,0.3); }
+.btn-submit:active  { transform: scale(0.95); }
+
+/* ── Camera ── */
+.camera-section { padding: 0 20px 16px; display: none; flex-direction: column; gap: 12px; }
+.camera-section.open { display: flex; }
+.camera-wrap {
+  position: relative; border-radius: var(--radius-xl);
+  overflow: hidden; border: 2px solid var(--cyan);
+  box-shadow: 0 0 0 1px rgba(0,229,255,0.15), 0 8px 32px rgba(0,0,0,0.5);
+  background: #000; aspect-ratio: 1;
+}
+#camera-reader { width: 100% !important; }
+#camera-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+#camera-reader img { display: none; }
+.scan-frame {
+  position: absolute; inset: 0; pointer-events: none;
+  display: flex; align-items: center; justify-content: center; z-index: 2;
+}
+.scan-frame-inner {
+  width: 65%; aspect-ratio: 1;
+  border: 2px solid rgba(0,229,255,0.8); border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.45); position: relative;
+}
+.scan-frame-inner::before, .scan-frame-inner::after {
+  content: ''; position: absolute; width: 22px; height: 22px;
+  border-color: var(--cyan); border-style: solid;
+}
+.scan-frame-inner::before { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-radius: 10px 0 0 0; }
+.scan-frame-inner::after  { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 10px 0; }
+.scan-line {
+  position: absolute; left: 4px; right: 4px; height: 2px;
+  background: linear-gradient(to right, transparent, var(--cyan), transparent);
+  box-shadow: 0 0 8px var(--cyan); border-radius: 1px;
+  animation: scanLine 2s ease-in-out infinite;
+}
+@keyframes scanLine {
+  0%   { top: 8px; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: calc(100% - 8px); opacity: 0; }
+}
+.camera-hint { text-align: center; font-size: 0.78rem; color: var(--text-3); }
+.btn-close-camera {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px;
+  color: var(--text-2); font-size: 0.82rem; font-weight: 600;
+  width: 100%; cursor: pointer;
+}
+.btn-close-camera:hover { border-color: var(--error); color: var(--error); }
+
+/* ── Result ── */
+.result-area { padding: 0 20px 16px; }
+.result-card {
+  border-radius: var(--radius-xl); padding: 28px 24px;
+  text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  animation: resultPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.result-card.success { background: rgba(0,232,122,0.08); border: 2px solid rgba(0,232,122,0.3); }
+.result-card.already { background: rgba(255,184,0,0.08); border: 2px solid rgba(255,184,0,0.25); }
+.result-card.error   { background: rgba(255,59,92,0.08);  border: 2px solid rgba(255,59,92,0.3); }
+@keyframes resultPop { from{opacity:0;transform:scale(0.85)} to{opacity:1;transform:scale(1)} }
+.result-emoji { font-size: 3.5rem; line-height: 1; }
+.result-name  { font-size: 1.4rem; font-weight: 800; }
+.result-seat  { font-family: var(--font-display); font-size: 2.6rem; letter-spacing: 4px; }
+.result-seat.success { color: var(--success); text-shadow: 0 0 20px rgba(0,232,122,0.4); }
+.result-seat.already { color: var(--warning); }
+.result-seat.error   { color: var(--error); }
+.result-meta { font-size: 0.82rem; color: var(--text-2); }
+
+/* ── History ── */
+.history-section { padding: 0 20px 20px; }
+.history-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-3); font-weight: 700; margin-bottom: 10px; }
+.history-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 6px; font-size: 0.82rem;
+}
+.history-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.history-dot.success { background: var(--success); }
+.history-dot.already { background: var(--warning); }
+.history-dot.error   { background: var(--error); }
+.history-badge {
+  font-size: 0.62rem; font-weight: 700; padding: 2px 6px;
+  border-radius: 4px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.history-badge.sell    { background: var(--orange-dim); color: var(--orange); }
+.history-badge.checkin { background: rgba(0,232,122,0.1); color: var(--success); }
+.history-name { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-seat { font-family: 'Courier New', monospace; font-size: 0.75rem; color: var(--text-2); flex-shrink: 0; }
+.history-time { font-size: 0.68rem; color: var(--text-3); flex-shrink: 0; }
+
+/* ── Stats Bar ── */
+.stats-bar {
+  border-top: 1px solid var(--border);
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  background: var(--border); gap: 1px;
+  position: sticky; bottom: 0; margin-top: auto;
+}
+.stat-bar-item {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 12px 8px; background: var(--surface);
+}
+.stat-bar-num { font-family: var(--font-display); font-size: 1.5rem; line-height: 1; }
+.stat-bar-lbl { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-3); margin-top: 2px; }
+
+/* ── Login ── */
+.login-overlay {
+  position: fixed; inset: 0; background: var(--black);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; z-index: 100;
+}
+.login-overlay.hidden { display: none; }
+.login-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-xl); padding: 40px 32px;
+  width: 100%; max-width: 400px; text-align: center;
+}
+.login-card h2 { margin-bottom: 6px; }
+.login-card p  { margin-bottom: 28px; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-card">
+    <div style="font-size:2.5rem;margin-bottom:16px">🔐</div>
+    <h2>Staff Login</h2>
+    <p>Log in to access the scanner.</p>
+    <div class="flex-col gap-12">
+      <input type="email" class="form-input" id="login-email" placeholder="Email" autocomplete="email">
+      <input type="password" class="form-input" id="login-password" placeholder="Password">
+      <button class="btn btn-primary btn-lg" id="btn-staff-login">Login →</button>
+    </div>
+    <p class="text-xs text-muted mt-16">
+      <a href="../admin/" class="text-orange">Go to Admin Dashboard →</a>
+    </p>
+  </div>
+</div>
+
+<!-- App -->
+<div class="scanner-page">
+  <div class="scanner-header">
+    <div class="brand gradient-both">VnV</div>
+    <div style="text-align:center">
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px">Staff Scanner</div>
+      <div id="admin-name" style="font-size:0.75rem;color:var(--text-3)">—</div>
+    </div>
+    <div class="scanner-status">
+      <div class="status-dot online" id="status-dot"></div>
+      <span id="status-text">Online</span>
+    </div>
+  </div>
+
+  <!-- Mode Toggle -->
+  <div class="mode-toggle">
+    <button class="mode-btn sell active" id="mode-sell">
+      <span class="mode-icon">🎫</span>
+      Mark as Sold
+      <span class="mode-label-sub">Physical form handover</span>
+    </button>
+    <button class="mode-btn checkin" id="mode-checkin">
+      <span class="mode-icon">✅</span>
+      Check In
+      <span class="mode-label-sub">Event entry scan</span>
+    </button>
+  </div>
+
+  <!-- Mode Banner -->
+  <div class="mode-banner sell" id="mode-banner">
+    🎫 Scan the code on the physical form to mark it as sold
+  </div>
+
+  <!-- Input -->
+  <div class="input-section">
+    <div class="code-field">
+      <input
+        type="text" class="scanner-code-input" id="code-input"
+        placeholder="Scan or enter code..."
+        maxlength="25" autocomplete="off" autocorrect="off"
+        autocapitalize="characters" spellcheck="false" autofocus
+      >
+      <button class="btn-camera" id="btn-camera" title="Use camera">📷</button>
+      <button class="btn-submit sell" id="btn-submit">✓</button>
+    </div>
+  </div>
+
+  <!-- Camera -->
+  <div class="camera-section" id="camera-section">
+    <div class="camera-wrap">
+      <div id="camera-reader"></div>
+      <div class="scan-frame">
+        <div class="scan-frame-inner">
+          <div class="scan-line"></div>
+        </div>
+      </div>
+    </div>
+    <div class="camera-hint">Point camera at the QR code on the form</div>
+    <button class="btn-close-camera" id="btn-close-camera">✕ Close Camera</button>
+  </div>
+
+  <!-- Result -->
+  <div class="result-area" id="result-area"></div>
+
+  <!-- History -->
+  <div class="history-section" id="history-section" style="display:none">
+    <div class="history-title">Recent Scans</div>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-bar-item">
+      <div class="stat-bar-num text-orange" id="stat-registered">—</div>
+      <div class="stat-bar-lbl">Registered</div>
+    </div>
+    <div class="stat-bar-item">
+      <div class="stat-bar-num text-green" id="stat-checked">—</div>
+      <div class="stat-bar-lbl">Checked In</div>
+    </div>
+    <div class="stat-bar-item">
+      <div class="stat-bar-num text-muted" id="stat-pending">—</div>
+      <div class="stat-bar-lbl">Pending</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { API } from '../js/api.js';
+import { toast, setLoading, fmtTime } from '../js/utils.js';
+
+// ── State ──────────────────────────────────────────────────────
+let currentMode     = 'sell';
+let scanHistory     = [];
+let html5QrCode     = null;
+let cameraOpen      = false;
+let lastScannedCode = '';
+let lastScannedAt   = 0;
+
+// ── Auth ───────────────────────────────────────────────────────
+const token = localStorage.getItem('vnv_admin_token');
+if (token) {
+  document.getElementById('login-overlay').classList.add('hidden');
+  init();
+} else {
+  document.getElementById('login-overlay').classList.remove('hidden');
+}
+
+document.getElementById('btn-staff-login').onclick = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  if (!email || !pass) { toast('Enter credentials', 'error'); return; }
+  const btn = document.getElementById('btn-staff-login');
+  setLoading(btn, true, 'Logging in...');
+  try {
+    const result = await API.adminLogin(email, pass);
+    localStorage.setItem('vnv_admin_token', result.token);
+    localStorage.setItem('vnv_admin', JSON.stringify(result.admin));
+    document.getElementById('login-overlay').classList.add('hidden');
+    init();
+  } catch(e) { toast(e.message, 'error'); }
+  finally { setLoading(btn, false); }
+};
+
+function init() {
+  const admin = JSON.parse(localStorage.getItem('vnv_admin') || '{}');
+  document.getElementById('admin-name').textContent = admin.name || 'Staff';
+  loadStats();
+  document.getElementById('code-input').focus();
+}
+
+// ── Mode Toggle ────────────────────────────────────────────────
+document.getElementById('mode-sell').onclick    = () => setMode('sell');
+document.getElementById('mode-checkin').onclick = () => setMode('checkin');
+
+function setMode(mode) {
+  currentMode = mode;
+  const isSell = mode === 'sell';
+
+  document.getElementById('mode-sell').className    = `mode-btn sell${isSell ? ' active' : ''}`;
+  document.getElementById('mode-checkin').className = `mode-btn checkin${!isSell ? ' active' : ''}`;
+
+  const banner = document.getElementById('mode-banner');
+  banner.className   = `mode-banner ${mode}`;
+  banner.textContent = isSell
+    ? '🎫 Scan the code on the physical form to mark it as sold'
+    : '✅ Scan the participant\'s code to check them in at the door';
+
+  document.getElementById('btn-submit').className = `btn-submit ${mode}`;
+  document.getElementById('result-area').innerHTML = '';
+  document.getElementById('code-input').value = '';
+  document.getElementById('code-input').focus();
+
+  if (cameraOpen) closeCamera();
+}
+
+// ── Submit ─────────────────────────────────────────────────────
+document.getElementById('btn-submit').onclick = doScan;
+document.getElementById('code-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doScan();
+});
+
+async function doScan() {
+  const code = document.getElementById('code-input').value.trim().toUpperCase();
+  if (!code) return;
+
+  const btn = document.getElementById('btn-submit');
+  btn.textContent = '…'; btn.disabled = true;
+
+  try {
+    if (currentMode === 'sell') {
+      await doSellScan(code);
+    } else {
+      await doCheckInScan(code);
+    }
+    document.getElementById('code-input').value = '';
+    document.getElementById('code-input').focus();
+    loadStats();
+  } catch(e) {
+    if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+    showResult('error', null, null, e.message);
+    addHistory('error', 'Failed', '—', currentMode);
+  } finally {
+    btn.textContent = '✓'; btn.disabled = false;
+  }
+}
+
+async function doSellScan(code) {
+  await API.markCodeSold(code);
+  if (navigator.vibrate) navigator.vibrate(150);
+  showResult('success', code, null, 'Form marked as sold ✓');
+  addHistory('success', code, '—', 'sell');
+}
+
+async function doCheckInScan(code) {
+  const result  = await API.checkIn(code, 'CODE_SCAN');
+  const ci      = result.checkIn;
+  const name    = ci.participant?.fullName || 'Unknown';
+  const seat    = ci.participant?.seatAssignment?.seat?.seatNumber || '—';
+  const already = result.alreadyCheckedIn;
+
+  if (navigator.vibrate) navigator.vibrate(already ? [100, 50, 100] : [200]);
+  showResult(already ? 'already' : 'success', name, seat, already ? 'Already checked in earlier' : null);
+  addHistory(already ? 'already' : 'success', name, seat, 'checkin');
+}
+
+// ── Camera ─────────────────────────────────────────────────────
+document.getElementById('btn-camera').onclick       = () => cameraOpen ? closeCamera() : openCamera();
+document.getElementById('btn-close-camera').onclick = closeCamera;
+
+async function openCamera() {
+  cameraOpen = true;
+  document.getElementById('camera-section').classList.add('open');
+  document.getElementById('btn-camera').classList.add('active');
+  document.getElementById('btn-camera').textContent = '🔴';
+  try {
+    html5QrCode = new Html5Qrcode('camera-reader');
+    await html5QrCode.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      onCameraCodeScanned,
+      () => {}
+    );
+  } catch(e) {
+    toast('Camera access denied or unavailable', 'error');
+    closeCamera();
+  }
+}
+
+async function closeCamera() {
+  cameraOpen = false;
+  document.getElementById('camera-section').classList.remove('open');
+  document.getElementById('btn-camera').classList.remove('active');
+  document.getElementById('btn-camera').textContent = '📷';
+  if (html5QrCode) {
+    try { await html5QrCode.stop(); } catch(_) {}
+    html5QrCode = null;
+  }
+  document.getElementById('code-input').focus();
+}
+
+async function onCameraCodeScanned(rawCode) {
+  const now = Date.now();
+  if (rawCode === lastScannedCode && now - lastScannedAt < 3000) return;
+  lastScannedCode = rawCode;
+  lastScannedAt   = now;
+
+  // Handle plain code string OR full registration URL (?code=VNV...)
+  let code = rawCode.trim().toUpperCase();
+  const urlMatch = rawCode.match(/[?&]code=([A-Z0-9]+)/i);
+  if (urlMatch) code = urlMatch[1].toUpperCase();
+
+  if (navigator.vibrate) navigator.vibrate(50);
+  document.getElementById('code-input').value = code;
+  await closeCamera();
+  await doScan();
+}
+
+// ── Result ─────────────────────────────────────────────────────
+function showResult(type, name, seat, msg) {
+  const emojis = { success: '✅', already: '⚠️', error: '❌' };
+  document.getElementById('result-area').innerHTML = `
+    <div class="result-card ${type}">
+      <div class="result-emoji">${emojis[type]}</div>
+      ${name ? `<div class="result-name">${name}</div>` : ''}
+      ${seat && seat !== '—' ? `<div class="result-seat ${type}">${seat}</div>` : ''}
+      ${msg  ? `<div class="result-meta">${msg}</div>` : ''}
+      ${type === 'success' && currentMode === 'checkin' ? `<div class="result-meta">Welcome! Head to your seat.</div>` : ''}
+    </div>
+  `;
+  setTimeout(() => { document.getElementById('result-area').innerHTML = ''; }, 6000);
+}
+
+// ── History ────────────────────────────────────────────────────
+function addHistory(type, name, seat, mode) {
+  scanHistory.unshift({ type, name, seat, mode, time: new Date() });
+  if (scanHistory.length > 20) scanHistory.pop();
+  renderHistory();
+}
+
+function renderHistory() {
+  if (!scanHistory.length) return;
+  document.getElementById('history-section').style.display = '';
+  document.getElementById('history-list').innerHTML = scanHistory.slice(0, 6).map(h => `
+    <div class="history-item">
+      <div class="history-dot ${h.type}"></div>
+      <span class="history-badge ${h.mode}">${h.mode === 'sell' ? 'Sold' : 'Check-in'}</span>
+      <div class="history-name">${h.name}</div>
+      ${h.seat && h.seat !== '—' ? `<div class="history-seat">${h.seat}</div>` : ''}
+      <div class="history-time">${fmtTime(h.time)}</div>
+    </div>
+  `).join('');
+}
+
+// ── Stats ──────────────────────────────────────────────────────
+// Uses getCheckinStats only — no separate getCodes call needed.
+// totalRegistered from stats doubles as the "sold & registered" count.
+async function loadStats() {
+  try {
+    const stats = await API.getCheckinStats();
+
+    const totals = stats.reduce((acc, z) => {
+      acc.registered += parseInt(z.totalRegistered) || 0;
+      acc.checked    += parseInt(z.totalCheckedIn)  || 0;
+      acc.pending    += parseInt(z.notYetArrived)   || 0;
+      return acc;
+    }, { registered: 0, checked: 0, pending: 0 });
+
+    document.getElementById('stat-registered').textContent = totals.registered;
+    document.getElementById('stat-checked').textContent    = totals.checked;
+    document.getElementById('stat-pending').textContent    = totals.pending;
+
+    document.getElementById('status-dot').className    = 'status-dot online';
+    document.getElementById('status-text').textContent = 'Online';
+  } catch(e) {
+    document.getElementById('status-dot').className    = 'status-dot offline';
+    document.getElementById('status-text').textContent = 'Offline';
+  }
+}
+
+setInterval(loadStats, 30000);
+</script>
+</body>
+</html>

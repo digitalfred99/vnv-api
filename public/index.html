@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vibe & View — Community Event</title>
+<link rel="stylesheet" href="css/vnv.css">
+<style>
+/* ── Hero ─────────────────────────────────────── */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  padding: 120px 24px 80px;
+  position: relative; overflow: hidden;
+}
+.hero-glow-1 {
+  position: absolute; width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(255,107,0,0.15) 0%, transparent 70%);
+  top: -100px; left: -200px; pointer-events: none;
+}
+.hero-glow-2 {
+  position: absolute; width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 70%);
+  bottom: -50px; right: -100px; pointer-events: none;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 100px; padding: 6px 16px;
+  font-size: 0.8rem; font-weight: 600; color: var(--text-2);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 32px;
+}
+.hero-eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
+.hero h1 { font-size: clamp(3rem, 8vw, 6rem); font-weight: 900; line-height: 1.05; margin-bottom: 24px; }
+.hero p { font-size: clamp(1rem, 2vw, 1.2rem); max-width: 560px; color: var(--text-2); margin-bottom: 40px; }
+.hero-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.hero-scroll { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--text-3); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; animation: float 2s ease-in-out infinite; }
+.hero-scroll svg { width: 20px; height: 20px; }
+@keyframes float { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+
+/* ── Film strip decoration ───────────────────────────────── */
+.filmstrip {
+  display: flex; gap: 0;
+  overflow: hidden; width: 100%;
+  margin: 60px 0; opacity: 0.12;
+  position: relative;
+}
+.filmstrip::before, .filmstrip::after {
+  content:''; position: absolute; top:0; bottom:0; width:100px; z-index:1;
+}
+.filmstrip::before { left:0; background: linear-gradient(to right, var(--black), transparent); }
+.filmstrip::after  { right:0; background: linear-gradient(to left, var(--black), transparent); }
+.filmstrip-inner {
+  display: flex; gap: 4px;
+  animation: filmScroll 20s linear infinite;
+}
+.film-frame {
+  width: 80px; height: 60px; flex-shrink: 0;
+  background: var(--border);
+  border-radius: 2px;
+}
+@keyframes filmScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ── Zones Section ───────────────────────────────────────── */
+.zones-section { padding: 80px 0; }
+.section-header { text-align: center; margin-bottom: 60px; }
+.section-eyebrow { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 2px; color: var(--orange); font-weight: 700; margin-bottom: 12px; }
+.zone-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-xl); padding: 32px;
+  display: flex; flex-direction: column; gap: 16px;
+  transition: all 0.3s; cursor: default;
+  position: relative; overflow: hidden;
+}
+.zone-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.zone-card.pt::before { background: linear-gradient(90deg, var(--orange), var(--orange-2)); }
+.zone-card.sr::before { background: linear-gradient(90deg, var(--cyan), var(--cyan-2)); }
+.zone-card.sc::before { background: linear-gradient(90deg, var(--success), #33FF99); }
+.zone-card.sl::before { background: linear-gradient(90deg, var(--warning), #FFD966); }
+.zone-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-card); border-color: var(--border-glow); }
+.zone-icon { font-size: 2.4rem; }
+.zone-name { font-size: 1.3rem; font-weight: 800; }
+.zone-price { font-family: var(--font-display); font-size: 2rem; }
+.zone-price.pt { color: var(--orange); }
+.zone-price.sr { color: var(--cyan); }
+.zone-price.sc { color: var(--success); }
+.zone-price.sl { color: var(--warning); }
+
+/* ── How it works ────────────────────────────────────────── */
+.how-section { padding: 80px 0; }
+.how-step {
+  display: flex; gap: 20px; align-items: flex-start;
+  padding: 24px 0;
+}
+.how-num {
+  font-family: var(--font-display); font-size: 3.5rem;
+  line-height: 1; flex-shrink: 0; width: 60px;
+  background: linear-gradient(135deg, var(--orange), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.how-step h3 { margin-bottom: 4px; }
+.how-divider { height: 1px; background: linear-gradient(to right, transparent, var(--border), transparent); }
+
+/* ── CTA ──────────────────────────────────────────────────── */
+.cta-section {
+  padding: 100px 0; text-align: center;
+  background: radial-gradient(ellipse at center, rgba(255,107,0,0.08) 0%, transparent 60%);
+}
+.cta-section h2 { margin-bottom: 12px; }
+.cta-section p { margin-bottom: 40px; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px;
+  text-align: center;
+  color: var(--text-3); font-size: 0.85rem;
+}
+footer .footer-logo { font-family: var(--font-display); font-size: 1.8rem; letter-spacing: 4px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="vnv-nav">
+  <div class="logo">
+    <span class="gradient-both display">VnV</span>
+  </div>
+  <div class="nav-links">
+    <a href="#zones" class="nav-link">Zones</a>
+    <a href="#how" class="nav-link">How It Works</a>
+    <a href="register.html" class="btn btn-primary btn-sm">Register Now</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-glow-1"></div>
+  <div class="hero-glow-2"></div>
+
+  <div class="hero-eyebrow fade-up">
+    <span class="dot"></span>
+    Event Registration Open
+  </div>
+
+  <h1 class="fade-up fade-up-1">
+    <span class="gradient-orange">VIBE</span>
+    <span style="color:var(--text-3)"> & </span>
+    <span class="gradient-cyan">VIEW</span>
+  </h1>
+
+  <p class="fade-up fade-up-2">
+    A community experience designed for connection. Find your vibe, claim your seat, and make moments that matter.
+  </p>
+
+  <div class="hero-btns fade-up fade-up-3">
+    <a href="register.html" class="btn btn-primary btn-lg">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      Get Your Seat
+    </a>
+    <a href="#zones" class="btn btn-ghost btn-lg">Explore Zones</a>
+  </div>
+
+  <div class="hero-scroll fade-up fade-up-4">
+    <span>Scroll</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </div>
+</section>
+
+<!-- Film strip -->
+<div class="filmstrip">
+  <div class="filmstrip-inner" id="filmstrip"></div>
+</div>
+
+<!-- Zones -->
+<section class="zones-section" id="zones">
+  <div class="container">
+    <div class="section-header fade-up">
+      <p class="section-eyebrow">Choose Your Experience</p>
+      <h2>Four Zones, One Night</h2>
+      <p style="max-width:480px;margin:0 auto">Each zone has its own vibe and seating logic. Pick the one that matches your energy.</p>
+    </div>
+
+    <div class="grid-4" id="zones-grid">
+      <!-- Loaded dynamically -->
+      <div class="zone-card pt fade-up">
+        <div class="zone-icon">💑</div>
+        <div>
+          <div class="zone-name">Partners</div>
+          <p style="font-size:0.88rem">Come as a couple. Sit together, guaranteed adjacent seats at the same table.</p>
+        </div>
+        <div class="zone-price pt">PT</div>
+      </div>
+      <div class="zone-card sr fade-up fade-up-1">
+        <div class="zone-icon">🔍</div>
+        <div>
+          <div class="zone-name">Searching</div>
+          <p style="font-size:0.88rem">Open to meeting someone new. Gender-alternating seating puts you right across your match.</p>
+        </div>
+        <div class="zone-price sr">SR</div>
+      </div>
+      <div class="zone-card sc fade-up fade-up-2">
+        <div class="zone-icon">🎉</div>
+        <div>
+          <div class="zone-name">Social</div>
+          <p style="font-size:0.88rem">Here for the vibes and new friendships. Mixed seating, all energy welcome.</p>
+        </div>
+        <div class="zone-price sc">SC</div>
+      </div>
+      <div class="zone-card sl fade-up fade-up-3">
+        <div class="zone-icon">🎧</div>
+        <div>
+          <div class="zone-name">Solo</div>
+          <p style="font-size:0.88rem">Your own space. Individual seats, no table pressure. Just you and the vibe.</p>
+        </div>
+        <div class="zone-price sl">SL</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how-section" id="how">
+  <div class="container-md">
+    <div class="section-header fade-up">
+      <p class="section-eyebrow">The Process</p>
+      <h2>How It Works</h2>
+    </div>
+
+    <div>
+      <div class="how-step fade-up">
+        <div class="how-num">01</div>
+        <div>
+          <h3>Buy Your Form</h3>
+          <p>Visit the info center. Choose your zone, pay, and receive a physical form with your unique access code printed on it.</p>
+        </div>
+      </div>
+      <div class="how-divider"></div>
+      <div class="how-step fade-up">
+        <div class="how-num">02</div>
+        <div>
+          <h3>Register Online</h3>
+          <p>Scan the QR on your form or visit this page. Enter your code, fill in your details, and your seat is instantly reserved.</p>
+        </div>
+      </div>
+      <div class="how-divider"></div>
+      <div class="how-step fade-up">
+        <div class="how-num">03</div>
+        <div>
+          <h3>Show Up & Check In</h3>
+          <p>Arrive at the venue. Staff scans your code at the entrance. Your seat number is confirmed and you're in.</p>
+        </div>
+      </div>
+      <div class="how-divider"></div>
+      <div class="how-step fade-up">
+        <div class="how-num">04</div>
+        <div>
+          <h3>Find Your Seat & Vibe</h3>
+          <p>Head straight to your assigned seat — no confusion, no scrambling. Just settle in and enjoy the night.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container-sm fade-up">
+    <h2>Ready to Claim Your Seat?</h2>
+    <p>Limited spots per zone. Don't wait — your table is waiting.</p>
+    <div class="flex gap-12 justify-center flex-wrap">
+      <a href="register.html" class="btn btn-primary btn-lg">Register Now</a>
+      <a href="profile.html" class="btn btn-ghost btn-lg">Already Registered?</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo gradient-both">VnV</div>
+  <p>Vibe &amp; View &mdash; Community Event</p>
+  <p style="margin-top:4px">Built with ♥ for the community</p>
+</footer>
+
+<div id="toast-container"></div>
+
+<script>
+  // Film strip
+  const fs = document.getElementById('filmstrip');
+  const frames = Array.from({length:40}, () => '<div class="film-frame"></div>').join('');
+  fs.innerHTML = frames + frames;
+
+  // Intersection observer for fade-up
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.style.animationPlayState = 'running'; observer.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-up').forEach(el => {
+    el.style.animationPlayState = 'paused';
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>

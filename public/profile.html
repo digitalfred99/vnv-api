@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile — Vibe & View</title>
+<link rel="stylesheet" href="css/vnv.css">
+<style>
+.profile-page { min-height: 100vh; padding: 80px 24px 60px; }
+.profile-hero {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  display: flex; align-items: center; gap: 32px;
+  margin-bottom: 32px;
+  position: relative; overflow: hidden;
+}
+.profile-hero::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--orange), var(--cyan));
+}
+.profile-avatar {
+  width: 80px; height: 80px; flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--orange-dim), var(--cyan-dim));
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+}
+.profile-name { font-size: 1.8rem; font-weight: 800; margin-bottom: 4px; }
+.profile-zone { display: flex; align-items: center; gap: 8px; }
+.profile-glow {
+  position: absolute; right: -60px; top: -60px;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(0,212,255,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+@media(max-width:600px) {
+  .profile-hero { flex-direction: column; text-align: center; padding: 28px 20px; }
+  .profile-zone { justify-content: center; }
+}
+
+.seat-card {
+  background: linear-gradient(135deg, rgba(0,212,255,0.05), rgba(255,107,0,0.05));
+  border: 2px solid var(--cyan-dim);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  text-align: center;
+  position: relative; overflow: hidden;
+  margin-bottom: 24px;
+}
+.seat-card-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-3); margin-bottom: 12px; font-weight: 700; }
+.seat-number {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  letter-spacing: 6px;
+  color: var(--cyan);
+  text-shadow: 0 0 30px var(--cyan-glow);
+  margin-bottom: 8px;
+}
+.seat-detail { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
+.seat-detail-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.seat-detail-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-3); }
+.seat-detail-value { font-weight: 700; color: var(--text); }
+
+.checkin-status-card {
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 24px;
+}
+.checkin-status-card.checked-in {
+  background: rgba(0,232,122,0.08);
+  border: 1px solid rgba(0,232,122,0.3);
+}
+.checkin-status-card.not-checked-in {
+  background: rgba(255,107,0,0.08);
+  border: 1px solid rgba(255,107,0,0.2);
+}
+
+.info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+@media(max-width:600px) { .info-grid { grid-template-columns: 1fr; } }
+.info-item {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+}
+.info-item-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-3); font-weight: 600; margin-bottom: 4px; }
+.info-item-value { font-weight: 600; color: var(--text); }
+
+.interests-display { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.interest-chip {
+  padding: 5px 12px; border-radius: 100px;
+  background: var(--cyan-dim); border: 1px solid var(--cyan-glow);
+  font-size: 0.8rem; color: var(--cyan); font-weight: 500;
+}
+
+/* Login prompt */
+.login-prompt {
+  min-height: 80vh;
+  display: flex; align-items: center; justify-content: center;
+}
+.login-box {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-xl); padding: 48px 40px;
+  text-align: center; max-width: 440px; width: 100%;
+}
+.login-box h2 { margin-bottom: 8px; }
+.login-box p { margin-bottom: 32px; }
+</style>
+</head>
+<body>
+
+<nav class="vnv-nav">
+  <div class="logo">
+    <a href="index.html" class="gradient-both display">VnV</a>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">Home</a>
+    <button class="btn btn-ghost btn-sm" id="btn-logout" style="display:none">Sign Out</button>
+  </div>
+</nav>
+
+<main class="profile-page container-md" style="padding-top:100px">
+
+  <!-- Login form (shown if no token) -->
+  <div class="login-prompt" id="login-section">
+    <div class="login-box">
+      <div style="font-size:2.5rem;margin-bottom:16px">🎫</div>
+      <h2>View Your Profile</h2>
+      <p>Enter your access code to see your seat and check-in status.</p>
+      <div class="form-group mb-16">
+        <input type="text" class="form-input font-mono" id="login-code" placeholder="VNV2026SR..." style="text-align:center;font-size:1.1rem;letter-spacing:2px;text-transform:uppercase" maxlength="25">
+      </div>
+      <button class="btn btn-primary btn-lg w-full" id="btn-login">View My Seat →</button>
+      <div class="divider"></div>
+      <p class="text-sm text-muted">Not registered yet? <a href="register.html" class="text-orange">Register here →</a></p>
+    </div>
+  </div>
+
+  <!-- Profile content (shown after login) -->
+  <div id="profile-section" class="hidden">
+
+    <!-- Hero -->
+    <div class="profile-hero fade-up" id="profile-hero">
+      <div class="profile-avatar" id="profile-avatar">😊</div>
+      <div class="profile-glow"></div>
+      <div>
+        <div class="profile-name" id="profile-name">—</div>
+        <div class="profile-zone" id="profile-zone"></div>
+        <div style="font-size:0.85rem;color:var(--text-3);margin-top:4px" id="profile-phone"></div>
+      </div>
+    </div>
+
+    <!-- Seat card -->
+    <div class="seat-card fade-up fade-up-1" id="seat-card">
+      <div class="seat-card-label">Your Assigned Seat</div>
+      <div class="seat-number" id="seat-number">—</div>
+      <div class="seat-detail" id="seat-detail"></div>
+    </div>
+
+    <!-- Check-in status -->
+    <div class="checkin-status-card not-checked-in fade-up fade-up-2" id="checkin-status">
+      <span style="font-size:1.6rem" id="checkin-icon">⏳</span>
+      <div>
+        <div style="font-weight:700" id="checkin-status-title">Not Yet Checked In</div>
+        <div style="font-size:0.85rem;color:var(--text-2)" id="checkin-status-sub">Show your code at the entrance on event day</div>
+      </div>
+    </div>
+
+    <!-- Personal Info -->
+    <div class="card fade-up fade-up-3 mb-24">
+      <h3 class="mb-16">Personal Details</h3>
+      <div class="info-grid" id="info-grid"></div>
+    </div>
+
+    <!-- Interests -->
+    <div class="card fade-up fade-up-4" id="interests-section" style="display:none">
+      <h3>Interests</h3>
+      <div class="interests-display" id="interests-display"></div>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast-container"></div>
+<div id="page-loader" class="page-loader"><div class="loader loader-lg"></div></div>
+
+<script type="module">
+import { API } from './js/api.js';
+import { toast, setLoading, fmtDateTime, zoneBadge } from './js/utils.js';
+
+const token = localStorage.getItem('vnv_participant_token');
+document.getElementById('page-loader').classList.add('hidden');
+
+if (token) {
+  document.getElementById('login-section').classList.add('hidden');
+  document.getElementById('btn-logout').style.display = '';
+  loadProfile();
+} else {
+  document.getElementById('login-section').style.display = 'flex';
+  document.getElementById('profile-section').classList.add('hidden');
+}
+
+async function loadProfile() {
+  try {
+    const p = await API.getProfile();
+    renderProfile(p);
+    document.getElementById('profile-section').classList.remove('hidden');
+    document.getElementById('login-section').classList.add('hidden');
+  } catch(e) {
+    toast('Failed to load profile. Please login again.', 'error');
+    localStorage.removeItem('vnv_participant_token');
+    document.getElementById('login-section').style.display = 'flex';
+  }
+}
+
+function renderProfile(p) {
+  const avatars = { MALE: '👨', FEMALE: '👩', PREFER_NOT_TO_SAY: '😊' };
+  document.getElementById('profile-avatar').textContent = avatars[p.gender] || '😊';
+  document.getElementById('profile-name').textContent = p.fullName;
+  document.getElementById('profile-phone').textContent = p.phoneNumber;
+
+  const slug = p.accessCode?.category?.slug;
+  const zoneNames = { PT: 'Partners', SR: 'Searching', SC: 'Social', SL: 'Solo' };
+  const zoneColors = { PT: '#FF6B00', SR: '#00D4FF', SC: '#00E87A', SL: '#FFB800' };
+  document.getElementById('profile-zone').innerHTML = `
+    <span style="width:8px;height:8px;border-radius:50%;background:${zoneColors[slug] || '#fff'};display:inline-block"></span>
+    <span style="font-weight:600;color:var(--text-2)">${zoneNames[slug] || ''} Zone</span>
+  `;
+
+  // Seat
+  const seat = p.seatAssignment?.seat;
+  if (seat) {
+    document.getElementById('seat-number').textContent = seat.seatNumber;
+    if (seat.tableNumber) {
+      document.getElementById('seat-detail').innerHTML = `
+        <div class="seat-detail-item"><div class="seat-detail-label">Table</div><div class="seat-detail-value">${seat.tableNumber}</div></div>
+        <div class="seat-detail-item"><div class="seat-detail-label">Side</div><div class="seat-detail-value">Side ${seat.side}</div></div>
+        <div class="seat-detail-item"><div class="seat-detail-label">Chair</div><div class="seat-detail-value">#${seat.sidePosition}</div></div>
+      `;
+    }
+  } else {
+    document.getElementById('seat-number').textContent = 'Not Assigned';
+    document.getElementById('seat-number').style.color = 'var(--text-3)';
+  }
+
+  // Check-in
+  const ci = p.checkIn;
+  const ciCard = document.getElementById('checkin-status');
+  if (ci) {
+    ciCard.className = 'checkin-status-card checked-in fade-up fade-up-2';
+    document.getElementById('checkin-icon').textContent = '✅';
+    document.getElementById('checkin-status-title').textContent = 'Checked In!';
+    document.getElementById('checkin-status-sub').textContent = `Checked in at ${fmtDateTime(ci.checkedInAt)}`;
+  }
+
+  // Info grid
+  const info = [
+    { label: 'Gender', value: p.gender?.replace(/_/g, ' ') },
+    { label: 'Age Range', value: p.ageRange },
+    { label: 'Community', value: p.communityArea },
+    { label: 'Relationship', value: p.relationshipStatus?.replace(/_/g, ' ') },
+    { label: 'Personality', value: p.personalityType || '—' },
+    { label: 'Zone', value: `${zoneNames[slug] || ''} (${slug})` },
+  ];
+  document.getElementById('info-grid').innerHTML = info.map(i => `
+    <div class="info-item">
+      <div class="info-item-label">${i.label}</div>
+      <div class="info-item-value">${i.value}</div>
+    </div>
+  `).join('');
+
+  // Interests
+  if (p.interests?.length) {
+    document.getElementById('interests-section').style.display = '';
+    document.getElementById('interests-display').innerHTML = p.interests.map(i =>
+      `<span class="interest-chip">${i}</span>`
+    ).join('');
+  }
+}
+
+// Login
+document.getElementById('btn-login').onclick = async () => {
+  const code = document.getElementById('login-code').value.trim().toUpperCase();
+  if (!code) { toast('Enter your access code', 'error'); return; }
+  const btn = document.getElementById('btn-login');
+  setLoading(btn, true, 'Loading...');
+  try {
+    const result = await API.participantLogin(code);
+    localStorage.setItem('vnv_participant_token', result.token);
+    document.getElementById('btn-logout').style.display = '';
+    await loadProfile();
+    toast('Welcome back!', 'success');
+  } catch(e) {
+    toast(e.message, 'error');
+  } finally { setLoading(btn, false); }
+};
+
+document.getElementById('login-code').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+document.getElementById('login-code').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-login').click();
+});
+
+document.getElementById('btn-logout').onclick = () => {
+  localStorage.removeItem('vnv_participant_token');
+  location.reload();
+};
+</script>
+</body>
+</html>

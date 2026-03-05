@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — Vibe & View</title>
+<link rel="stylesheet" href="../../../../../css/vnv.css">
+<style>
+/* ── Seat Map Visual ──────────────────────────────────────── */
+.seat-map-container { overflow-x: auto; }
+.seat-map-inner { display: flex; flex-direction: column; gap: 16px; min-width: 420px; }
+.table-visual {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px;
+}
+.table-visual-header { font-size: 0.75rem; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; justify-content: space-between; }
+.table-sides { display: flex; flex-direction: column; gap: 6px; }
+.table-side-row { display: flex; align-items: center; gap: 6px; }
+.side-label { font-size: 0.68rem; font-weight: 700; color: var(--text-3); width: 14px; text-align: center; }
+.seats-row { display: flex; gap: 5px; }
+.seat-cell {
+  width: 40px; height: 36px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.62rem; font-weight: 700;
+  border: 1px solid; cursor: pointer;
+  transition: all 0.15s; position: relative;
+}
+.seat-cell.free     { background: var(--surface); border-color: var(--border); color: var(--text-3); }
+.seat-cell.free:hover { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+.seat-cell.occupied { background: var(--orange-dim); border-color: var(--orange); color: var(--orange); }
+.seat-cell.reserved { background: rgba(255,184,0,0.1); border-color: var(--warning); color: var(--warning); }
+.table-divider { height: 4px; background: linear-gradient(to right, transparent, var(--border), transparent); border-radius: 100px; margin: 2px 6px; }
+
+/* ── Code Generator ───────────────────────────────────────── */
+.code-list {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 240px; overflow-y: auto;
+}
+.code-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  font-family: 'Courier New', monospace; font-size: 0.85rem; font-weight: 600;
+  letter-spacing: 1px;
+}
+.code-item.sold { border-color: var(--orange-dim); }
+.code-item.used { border-color: rgba(0,232,122,0.3); opacity: 0.6; }
+
+/* ── Zones Overview ───────────────────────────────────────── */
+.zone-overview-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.zone-overview-header { display: flex; justify-content: space-between; align-items: center; }
+.zone-overview-name { font-weight: 700; }
+.zone-progress-wrap { display: flex; flex-direction: column; gap: 6px; }
+.zone-stat-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-2); }
+
+/* ── Participant Card ─────────────────────────────────────── */
+.participant-row { cursor: pointer; }
+.participant-row:hover td { background: var(--card-hover); }
+
+/* ── Quick Actions ────────────────────────────────────────── */
+.quick-actions {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;
+  margin-bottom: 32px;
+}
+.quick-action {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  text-align: center; cursor: pointer;
+  transition: all 0.2s;
+}
+.quick-action:hover { border-color: var(--orange); background: var(--orange-dim); transform: translateY(-2px); }
+.quick-action .qa-icon { font-size: 1.8rem; }
+.quick-action .qa-label { font-size: 0.82rem; font-weight: 700; color: var(--text-2); }
+
+/* ── Page sections ────────────────────────────────────────── */
+.page-section { display: none; }
+.page-section.active { display: block; }
+
+/* ── Tab Bar ──────────────────────────────────────────────── */
+.tab-bar { display: flex; gap: 4px; background: var(--surface); padding: 4px; border-radius: var(--radius-lg); margin-bottom: 24px; }
+.tab-btn { flex: 1; padding: 8px 12px; border-radius: var(--radius); font-size: 0.82rem; font-weight: 600; color: var(--text-2); background: transparent; transition: all 0.15s; text-align: center; }
+.tab-btn.active { background: var(--card); color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- Login overlay -->
+<div class="modal-overlay" id="login-overlay" style="background:var(--black);backdrop-filter:none">
+  <div class="modal" style="max-width:400px;text-align:center">
+    <div style="font-size:2.5rem;margin-bottom:16px">🔐</div>
+    <h2 style="margin-bottom:6px">Admin Login</h2>
+    <p style="margin-bottom:28px">Sign in to access the dashboard</p>
+    <div class="flex-col gap-12">
+      <input type="email" class="form-input" id="admin-email" placeholder="Email address" autocomplete="email">
+      <input type="password" class="form-input" id="admin-password" placeholder="Password">
+      <button class="btn btn-primary btn-lg w-full" id="btn-admin-login">Sign In →</button>
+    </div>
+  </div>
+</div>
+
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="brand gradient-both">VnV</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Overview</div>
+      <a class="sidebar-link active" data-page="dashboard" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+
+      <div class="sidebar-section">Event</div>
+      <a class="sidebar-link" data-page="categories" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"/></svg>
+        Categories
+      </a>
+      <a class="sidebar-link" data-page="seats" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 19v-8a6 6 0 0 1 12 0v8"/><path d="M4 19h16"/></svg>
+        Seats
+      </a>
+      <a class="sidebar-link" data-page="codes" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="6" height="18" rx="1"/><rect x="9" y="3" width="4" height="18" rx="1"/><rect x="15" y="3" width="7" height="18" rx="1"/></svg>
+        Access Codes
+      </a>
+      <a class="sidebar-link" data-page="participants" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Participants
+      </a>
+      <a class="sidebar-link" data-page="checkin" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Check-In
+      </a>
+
+      <div class="sidebar-section" id="admin-section" style="display:none">System</div>
+      <a class="sidebar-link" data-page="admins" href="#" id="admins-link" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Admins
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="flex items-center justify-between">
+        <div>
+          <div style="font-size:0.85rem;font-weight:600" id="sidebar-name">—</div>
+          <div style="font-size:0.72rem;color:var(--text-3)" id="sidebar-role">—</div>
+        </div>
+        <button class="btn btn-ghost btn-sm btn-icon" id="btn-logout" title="Logout">⎋</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="admin-main">
+    <div class="admin-header">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="sidebar-toggle" id="sidebar-toggle" style="position:static;width:36px;height:36px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);display:none;font-size:1.1rem;align-items:center;justify-content:center">☰</button>
+        <h1 id="page-title">Dashboard</h1>
+      </div>
+      <div class="flex gap-8 items-center">
+        <a href="../../../../../checkin.html" class="btn btn-primary btn-sm">
+          📱 Scanner
+        </a>
+      </div>
+    </div>
+
+    <div class="admin-content">
+
+      <!-- ── Dashboard ─────────────────────────────────────── -->
+      <div class="page-section active" id="page-dashboard">
+        <div class="grid-4 mb-24" id="overview-stats">
+          <div class="stat-card orange fade-up"><div class="stat-label">Registered</div><div class="stat-value" id="stat-registered">—</div><div class="stat-sub">Participants</div></div>
+          <div class="stat-card cyan fade-up fade-up-1"><div class="stat-label">Checked In</div><div class="stat-value" id="stat-checkin">—</div><div class="stat-sub">Today</div></div>
+          <div class="stat-card green fade-up fade-up-2"><div class="stat-label">Seats Filled</div><div class="stat-value" id="stat-seats">—</div><div class="stat-sub">Occupied</div></div>
+          <div class="stat-card fade-up fade-up-3"><div class="stat-label">Codes Sold</div><div class="stat-value" id="stat-codes">—</div><div class="stat-sub">Access codes</div></div>
+        </div>
+
+        <h3 class="mb-16">Zone Overview</h3>
+        <div class="grid-4 mb-32" id="zone-cards"></div>
+
+        <h3 class="mb-16">Quick Actions</h3>
+        <div class="quick-actions">
+          <div class="quick-action" onclick="navigate('codes')">
+            <div class="qa-icon">🎫</div>
+            <div class="qa-label">Generate Codes</div>
+          </div>
+          <div class="quick-action" onclick="navigate('seats')">
+            <div class="qa-icon">💺</div>
+            <div class="qa-label">Create Seats</div>
+          </div>
+          <div class="quick-action" onclick="navigate('checkin')">
+            <div class="qa-icon">✅</div>
+            <div class="qa-label">View Check-ins</div>
+          </div>
+          <div class="quick-action" onclick="navigate('participants')">
+            <div class="qa-icon">👥</div>
+            <div class="qa-label">Participants</div>
+          </div>
+          <div class="quick-action" onclick="window.open('../../../../../checkin.html','_blank')">
+            <div class="qa-icon">📱</div>
+            <div class="qa-label">Open Scanner</div>
+          </div>
+          <div class="quick-action" onclick="navigate('categories')">
+            <div class="qa-icon">📂</div>
+            <div class="qa-label">Manage Zones</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Categories ─────────────────────────────────────── -->
+      <div class="page-section" id="page-categories">
+        <div class="flex justify-between items-center mb-24">
+          <p class="text-muted text-sm">Manage the 4 event zones.</p>
+          <button class="btn btn-primary btn-sm" id="btn-new-category">+ New Category</button>
+        </div>
+        <div class="table-wrap">
+          <table class="vnv-table"><thead><tr><th>Name</th><th>Slug</th><th>Zone</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="categories-body"><tr><td colspan="6"><div class="empty-state"><div class="loader"></div></div></td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- ── Seats ──────────────────────────────────────────── -->
+      <div class="page-section" id="page-seats">
+        <div class="tab-bar">
+          <button class="tab-btn active" data-tab="map">Seat Map</button>
+          <button class="tab-btn" data-tab="summary">Summary</button>
+          <button class="tab-btn" data-tab="create">Create Seats</button>
+        </div>
+
+        <!-- Summary tab -->
+        <div id="seats-tab-summary" style="display:none">
+          <div class="grid-4" id="seat-summary-cards"></div>
+        </div>
+
+        <!-- Map tab -->
+        <div id="seats-tab-map">
+          <div class="filter-bar">
+            <select class="form-select" id="map-category-filter" style="min-width:200px">
+              <option value="">All Zones</option>
+            </select>
+          </div>
+          <div class="seat-map-container">
+            <div class="seat-map-inner" id="seat-map"></div>
+          </div>
+          <div class="seat-legend mt-16">
+            <div class="seat-legend-item"><div class="seat-legend-dot" style="background:var(--surface);border-color:var(--border)"></div>Available</div>
+            <div class="seat-legend-item"><div class="seat-legend-dot" style="background:var(--orange-dim);border-color:var(--orange)"></div>Occupied</div>
+            <div class="seat-legend-item"><div class="seat-legend-dot" style="background:rgba(255,184,0,0.1);border-color:var(--warning)"></div>Reserved</div>
+          </div>
+        </div>
+
+        <!-- Create tab -->
+        <div id="seats-tab-create" style="display:none">
+          <div class="card" style="max-width:480px">
+            <h3 class="mb-16">Create Seats in Batch</h3>
+            <div class="flex-col gap-16">
+              <div class="form-group">
+                <label class="form-label">Category / Zone</label>
+                <select class="form-select" id="seat-category-select"><option value="">Select zone</option></select>
+              </div>
+              <div id="seat-create-table-fields">
+                <div class="form-group">
+                  <label class="form-label">Number of Tables</label>
+                  <input type="number" class="form-input" id="seat-num-tables" min="1" max="50" placeholder="e.g. 5">
+                  <p class="form-hint">Creates 8 seats per table (4 per side)</p>
+                </div>
+                <div class="form-group mt-8">
+                  <label class="form-label">Start From Table # (optional)</label>
+                  <input type="number" class="form-input" id="seat-start-table" min="1" placeholder="Default: 1">
+                </div>
+              </div>
+              <div id="seat-create-solo-fields" style="display:none">
+                <div class="form-group">
+                  <label class="form-label">Number of Seats</label>
+                  <input type="number" class="form-input" id="seat-num-solo" min="1" max="200" placeholder="e.g. 20">
+                </div>
+              </div>
+              <button class="btn btn-primary" id="btn-create-seats">Create Seats</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Access Codes ───────────────────────────────────── -->
+      <div class="page-section" id="page-codes">
+        <div class="grid-2 mb-24" style="gap:24px">
+          <!-- Generator -->
+          <div class="card">
+            <h3 class="mb-16">Generate Codes</h3>
+            <div class="flex-col gap-12">
+              <div class="form-group">
+                <label class="form-label">Zone / Category</label>
+                <select class="form-select" id="gen-category"><option value="">Select zone</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Count (max 200)</label>
+                <input type="number" class="form-input" id="gen-count" min="1" max="200" placeholder="e.g. 40">
+              </div>
+              <button class="btn btn-primary" id="btn-generate">Generate →</button>
+            </div>
+          </div>
+
+          <!-- Mark sold -->
+          <div class="card">
+            <h3 class="mb-16">Mark Code as Sold</h3>
+            <p class="text-sm text-muted mb-16">After handing the physical form to an attendee.</p>
+            <div class="flex-col gap-12">
+              <div class="form-group">
+                <label class="form-label">Access Code</label>
+                <input type="text" class="form-input font-mono" id="sell-code" placeholder="VNV2026SR..." style="text-transform:uppercase" maxlength="25">
+              </div>
+              <button class="btn btn-success" id="btn-mark-sold">Mark as Sold ✓</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Codes list -->
+        <div class="filter-bar">
+          <select class="form-select" id="codes-category-filter"><option value="">All Zones</option></select>
+          <select class="form-select" id="codes-sold-filter"><option value="">All Status</option><option value="false">Unsold</option><option value="true">Sold</option></select>
+          <select class="form-select" id="codes-used-filter"><option value="">All Usage</option><option value="false">Unused</option><option value="true">Used</option></select>
+          <button class="btn btn-ghost btn-sm" id="btn-refresh-codes">↻ Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <table class="vnv-table"><thead><tr><th>Code</th><th>Zone</th><th>Sold</th><th>Registered</th><th>Actions</th></tr></thead>
+          <tbody id="codes-body"><tr><td colspan="5"><div class="empty-state"><div class="loader"></div></div></td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- ── Participants ────────────────────────────────────── -->
+      <div class="page-section" id="page-participants">
+        <div class="filter-bar">
+          <input type="text" class="search-input" id="participants-search" placeholder="Search name or phone…">
+          <select class="form-select" id="participants-zone-filter" style="min-width:160px"><option value="">All Zones</option></select>
+          <button class="btn btn-ghost btn-sm" id="btn-refresh-participants">↻</button>
+        </div>
+        <div class="table-wrap">
+          <table class="vnv-table">
+            <thead><tr><th>Name</th><th>Zone</th><th>Seat</th><th>Gender</th><th>Checked In</th><th>Registered</th></tr></thead>
+            <tbody id="participants-body"><tr><td colspan="6"><div class="empty-state"><div class="loader"></div></div></td></tr></tbody>
+          </table>
+        </div>
+        <div id="participants-pagination" class="flex gap-8 justify-center mt-16"></div>
+      </div>
+
+      <!-- ── Check-in ───────────────────────────────────────── -->
+      <div class="page-section" id="page-checkin">
+        <div class="grid-4 mb-24" id="checkin-stats-grid"></div>
+        <div class="filter-bar">
+          <select class="form-select" id="checkin-zone-filter"><option value="">All Zones</option></select>
+          <button class="btn btn-ghost btn-sm" id="btn-refresh-checkin">↻ Refresh</button>
+          <a href="../../../../../checkin.html" class="btn btn-primary btn-sm">📱 Open Scanner</a>
+        </div>
+        <div class="table-wrap">
+          <table class="vnv-table">
+            <thead><tr><th>Name</th><th>Zone</th><th>Seat</th><th>Method</th><th>Verified By</th><th>Time</th></tr></thead>
+            <tbody id="checkin-body"><tr><td colspan="6"><div class="empty-state"><div class="loader"></div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Admins ──────────────────────────────────────────── -->
+      <div class="page-section" id="page-admins">
+        <div class="flex justify-between items-center mb-24">
+          <p class="text-muted text-sm">Manage admin accounts and roles.</p>
+          <button class="btn btn-primary btn-sm" id="btn-new-admin">+ New Admin</button>
+        </div>
+        <div class="table-wrap">
+          <table class="vnv-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+          <tbody id="admins-body"><tr><td colspan="6"><div class="empty-state"><div class="loader"></div></div></td></tr></tbody></table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Modals -->
+<!-- Category Modal -->
+<div class="modal-overlay" id="modal-category">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="cat-modal-title">New Category</div><button class="modal-close" onclick="closeModal('modal-category')">✕</button></div>
+    <div class="flex-col gap-12">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="cat-name" placeholder="e.g. Searching"></div>
+        <div class="form-group"><label class="form-label">Slug (2-4 chars)</label><input type="text" class="form-input" id="cat-slug" placeholder="e.g. SR" maxlength="4" style="text-transform:uppercase"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Zone Label</label><input type="text" class="form-input" id="cat-zone" placeholder="e.g. Searching Zone"></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="cat-desc" rows="2" placeholder="Brief description"></textarea></div>
+      <div class="form-group"><label class="form-label">Price (GHS)</label><input type="number" class="form-input" id="cat-price" placeholder="e.g. 40"></div>
+      <button class="btn btn-primary" id="btn-save-category">Save Category</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Modal -->
+<div class="modal-overlay" id="modal-admin">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">New Admin</div><button class="modal-close" onclick="closeModal('modal-admin')">✕</button></div>
+    <div class="flex-col gap-12">
+      <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="new-admin-name"></div>
+      <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="new-admin-email"></div>
+      <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-input" id="new-admin-pass"></div>
+      <div class="form-group"><label class="form-label">Role</label>
+        <select class="form-select" id="new-admin-role">
+          <option value="STAFF">Staff</option>
+          <option value="ADMIN">Admin</option>
+          <option value="SUPER_ADMIN">Super Admin</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="btn-save-admin">Create Admin</button>
+    </div>
+  </div>
+</div>
+
+<!-- Seat detail modal -->
+<div class="modal-overlay" id="modal-seat">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><div class="modal-title" id="seat-modal-title">Seat Info</div><button class="modal-close" onclick="closeModal('modal-seat')">✕</button></div>
+    <div id="seat-modal-content"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { API } from '../../../../../../../js/api.js';
+import { toast, setLoading, fmtDateTime, fmtDate, roleBadge, zoneBadge, confirm, debounce, ZONE_COLOR, ZONE_NAME } from '../../../../../../../js/utils.js';
+
+let currentAdmin = null;
+let categories = [];
+let participantPage = 1;
+let editingCatId = null;
+
+// ── Auth ──────────────────────────────────────────────────────
+const token = localStorage.getItem('vnv_admin_token');
+const loginOverlay = document.getElementById('login-overlay');
+
+if (token) {
+  loginOverlay.classList.remove('open');
+  initDashboard();
+} else {
+  loginOverlay.classList.add('open');
+}
+
+document.getElementById('btn-admin-login').onclick = async () => {
+  const email = document.getElementById('admin-email').value.trim();
+  const pass  = document.getElementById('admin-password').value;
+  if (!email || !pass) return;
+  const btn = document.getElementById('btn-admin-login');
+  setLoading(btn, true, 'Signing in...');
+  try {
+    const result = await API.adminLogin(email, pass);
+    localStorage.setItem('vnv_admin_token', result.token);
+    localStorage.setItem('vnv_admin', JSON.stringify(result.admin));
+    loginOverlay.classList.remove('open');
+    initDashboard();
+  } catch(e) { toast(e.message, 'error'); }
+  finally { setLoading(btn, false); }
+};
+
+document.getElementById('btn-logout').onclick = () => {
+  localStorage.removeItem('vnv_admin_token');
+  localStorage.removeItem('vnv_admin');
+  location.reload();
+};
+
+async function initDashboard() {
+  const admin = JSON.parse(localStorage.getItem('vnv_admin') || '{}');
+  currentAdmin = admin;
+  document.getElementById('sidebar-name').textContent = admin.name || '—';
+  document.getElementById('sidebar-role').textContent = admin.role || '—';
+
+  if (admin.role === 'SUPER_ADMIN') {
+    document.getElementById('admin-section').style.display = '';
+    document.getElementById('admins-link').style.display = '';
+  }
+
+  await loadCategories();
+  loadDashboard();
+}
+
+// ── Navigation ────────────────────────────────────────────────
+window.navigate = function(page) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+  document.getElementById('page-title').textContent =
+    { dashboard:'Dashboard', categories:'Categories', seats:'Seats', codes:'Access Codes', participants:'Participants', checkin:'Check-In', admins:'Admins' }[page] || page;
+  loadPage(page);
+};
+
+document.querySelectorAll('.sidebar-link').forEach(link => {
+  link.onclick = (e) => { e.preventDefault(); navigate(link.dataset.page); };
+});
+
+// Mobile sidebar
+const sidebarToggle = document.getElementById('sidebar-toggle');
+sidebarToggle.style.display = 'flex';
+sidebarToggle.onclick = () => document.getElementById('sidebar').classList.toggle('open');
+
+function loadPage(page) {
+  const loaders = {
+    dashboard:    loadDashboard,
+    categories:   loadCategories,
+    seats:        loadSeatsPage,
+    codes:        loadCodesPage,
+    participants: loadParticipants,
+    checkin:      loadCheckinPage,
+    admins:       loadAdmins,
+  };
+  loaders[page]?.();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [summary, stats, codes] = await Promise.all([
+      API.getSeatSummary(),
+      API.getCheckinStats(),
+      API.getCodes({ limit: 1 }),
+    ]);
+
+    const totalRegistered = stats.reduce((s, z) => s + parseInt(z.totalRegistered || 0), 0);
+    const totalCheckedIn  = stats.reduce((s, z) => s + parseInt(z.totalCheckedIn  || 0), 0);
+    const totalOccupied   = summary.reduce((s, z) => s + parseInt(z.occupiedSeats || 0), 0);
+
+    document.getElementById('stat-registered').textContent = totalRegistered;
+    document.getElementById('stat-checkin').textContent    = totalCheckedIn;
+    document.getElementById('stat-seats').textContent      = totalOccupied;
+
+    // Zone cards
+    document.getElementById('zone-cards').innerHTML = summary.map(z => {
+      const pct = z.totalSeats > 0 ? Math.round(z.occupiedSeats / z.totalSeats * 100) : 0;
+      const color = ZONE_COLOR[z.slug] || '#fff';
+      return `
+        <div class="zone-overview-card" style="border-top:3px solid ${color}">
+          <div class="zone-overview-header">
+            <div class="zone-overview-name">${z.categoryName}</div>
+            <span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${z.slug}</span>
+          </div>
+          <div class="zone-progress-wrap">
+            <div class="zone-stat-row"><span>${z.occupiedSeats} / ${z.totalSeats} seats</span><span style="color:${color}">${pct}%</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+          </div>
+          <div class="zone-stat-row"><span>${z.availableSeats} available</span><span>${z.totalTables || 0} tables</span></div>
+        </div>
+      `;
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ── Categories ────────────────────────────────────────────────
+async function loadCategories() {
+  try {
+    categories = await API.getCategories();
+    const tbody = document.getElementById('categories-body');
+    if (!tbody) return;
+    if (!categories.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📂</div><h3>No categories</h3><p>Create your first zone to get started</p></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = categories.map(c => `
+      <tr>
+        <td><strong>${c.name}</strong><div class="text-xs text-muted">${c.description || ''}</div></td>
+        <td><span class="font-mono text-orange">${c.slug}</span></td>
+        <td>${c.zoneLabel || '—'}</td>
+        <td><strong>GHS ${c.price || 0}</strong></td>
+        <td><span class="badge ${c.isActive ? 'badge-green' : 'badge-grey'}">${c.isActive ? 'Active' : 'Inactive'}</span></td>
+        <td>
+          <div class="flex gap-8">
+            <button class="btn btn-ghost btn-sm" onclick="editCategory('${c.id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteCategory('${c.id}','${c.name}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    // Populate category dropdowns everywhere
+    populateCategorySelects(categories);
+  } catch(e) { toast('Failed to load categories', 'error'); }
+}
+
+function populateCategorySelects(cats) {
+  const selects = ['seat-category-select','gen-category','map-category-filter','codes-category-filter','participants-zone-filter','checkin-zone-filter'];
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const first = el.options[0];
+    el.innerHTML = '';
+    el.appendChild(first);
+    cats.forEach(c => { const o = new Option(`${c.name} (${c.slug})`, c.id); el.appendChild(o); });
+  });
+}
+
+window.editCategory = function(id) {
+  const c = categories.find(x => x.id === id);
+  if (!c) return;
+  editingCatId = id;
+  document.getElementById('cat-modal-title').textContent = 'Edit Category';
+  document.getElementById('cat-name').value = c.name;
+  document.getElementById('cat-slug').value = c.slug;
+  document.getElementById('cat-zone').value = c.zoneLabel || '';
+  document.getElementById('cat-desc').value = c.description || '';
+  document.getElementById('cat-price').value = c.price || '';
+  openModal('modal-category');
+};
+
+window.deleteCategory = async function(id, name) {
+  if (!await confirm(`Delete category "${name}"? This cannot be undone.`)) return;
+  try { await API.deleteCategory(id); toast('Category deleted', 'success'); loadCategories(); }
+  catch(e) { toast(e.message, 'error'); }
+};
+
+document.getElementById('btn-new-category').onclick = () => {
+  editingCatId = null;
+  document.getElementById('cat-modal-title').textContent = 'New Category';
+  ['cat-name','cat-slug','cat-zone','cat-desc','cat-price'].forEach(id => document.getElementById(id).value = '');
+  openModal('modal-category');
+};
+
+document.getElementById('cat-slug').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+
+document.getElementById('btn-save-category').onclick = async () => {
+  const btn = document.getElementById('btn-save-category');
+  const d = {
+    name: document.getElementById('cat-name').value.trim(),
+    slug: document.getElementById('cat-slug').value.trim().toUpperCase(),
+    zoneLabel: document.getElementById('cat-zone').value.trim(),
+    description: document.getElementById('cat-desc').value.trim(),
+    price: parseFloat(document.getElementById('cat-price').value) || 0,
+  };
+  if (!d.name || !d.slug) { toast('Name and slug required', 'error'); return; }
+  setLoading(btn, true, 'Saving...');
+  try {
+    if (editingCatId) await API.updateCategory(editingCatId, d);
+    else await API.createCategory(d);
+    toast(editingCatId ? 'Category updated' : 'Category created', 'success');
+    closeModal('modal-category');
+    loadCategories();
+  } catch(e) { toast(e.message, 'error'); }
+  finally { setLoading(btn, false); }
+};
+
+// ── Seats ─────────────────────────────────────────────────────
+function loadSeatsPage() { loadSeatMap(); loadSeatSummary(); }
+
+async function loadSeatSummary() {
+  try {
+    const summary = await API.getSeatSummary();
+    document.getElementById('seat-summary-cards').innerHTML = summary.map(z => {
+      const pct = z.totalSeats > 0 ? Math.round(z.occupiedSeats / z.totalSeats * 100) : 0;
+      const color = ZONE_COLOR[z.slug] || '#fff';
+      return `
+        <div class="stat-card" style="border-top:3px solid ${color}">
+          <div class="stat-label">${z.categoryName}</div>
+          <div class="stat-value" style="color:${color}">${z.totalSeats}</div>
+          <div class="stat-sub">${z.occupiedSeats} occupied · ${z.availableSeats} free</div>
+          <div class="progress-bar mt-8"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {}
+}
+
+async function loadSeatMap(categoryId) {
+  const map = document.getElementById('seat-map');
+  map.innerHTML = '<div class="empty-state"><div class="loader"></div></div>';
+  try {
+    const params = {};
+    if (categoryId) params.categoryId = categoryId;
+    const seats = await API.getSeats(params);
+
+    if (!seats.length) { map.innerHTML = '<div class="empty-state"><div class="empty-icon">💺</div><h3>No seats</h3><p>Create seats first</p></div>'; return; }
+
+    // Group by table
+    const tables = {};
+    seats.forEach(s => {
+      if (!s.tableNumber) return; // Solo handled separately
+      const key = `${s.categoryId}_${s.tableNumber}`;
+      if (!tables[key]) tables[key] = { category: s.category, tableNumber: s.tableNumber, seats: [] };
+      tables[key].seats.push(s);
+    });
+
+    map.innerHTML = Object.values(tables).map(t => {
+      const sideA = t.seats.filter(s => s.side === 'A').sort((a,b) => a.sidePosition - b.sidePosition);
+      const sideB = t.seats.filter(s => s.side === 'B').sort((a,b) => a.sidePosition - b.sidePosition);
+      const color = ZONE_COLOR[t.category?.slug] || '#fff';
+      return `
+        <div class="table-visual" style="border-left:3px solid ${color}22">
+          <div class="table-visual-header">
+            <span>${t.category?.name || '?'} — Table ${t.tableNumber}</span>
+            <span style="color:var(--text-3)">${t.seats.filter(s=>s.isOccupied).length}/${t.seats.length} occupied</span>
+          </div>
+          <div class="table-sides">
+            <div class="table-side-row"><div class="side-label">A</div><div class="seats-row">${sideA.map(s => seatCell(s)).join('')}</div></div>
+            <div class="table-divider"></div>
+            <div class="table-side-row"><div class="side-label">B</div><div class="seats-row">${sideB.map(s => seatCell(s)).join('')}</div></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Click handlers
+    map.querySelectorAll('.seat-cell').forEach(cell => {
+      cell.onclick = () => showSeatModal(cell.dataset.id, seats);
+    });
+  } catch(e) { map.innerHTML = '<div class="empty-state"><p class="text-red">Failed to load seats</p></div>'; }
+}
+
+function seatCell(s) {
+  const cls = s.isOccupied ? 'occupied' : s.isReserved ? 'reserved' : 'free';
+  return `<div class="seat-cell ${cls}" data-id="${s.id}" title="${s.seatNumber}">${s.sidePosition}</div>`;
+}
+
+async function showSeatModal(id, seats) {
+  const s = seats.find(x => x.id === id);
+  if (!s) return;
+  const modal = document.getElementById('modal-seat');
+  document.getElementById('seat-modal-title').textContent = s.seatNumber;
+  const status = s.isOccupied ? `<span class="badge badge-orange">Occupied</span>` : s.isReserved ? `<span class="badge" style="background:rgba(255,184,0,0.1);color:var(--warning);border:1px solid rgba(255,184,0,0.3)">Reserved</span>` : `<span class="badge badge-green">Available</span>`;
+  document.getElementById('seat-modal-content').innerHTML = `
+    <div class="flex-col gap-12">
+      <div class="flex gap-8 items-center">${status}<span class="text-sm text-muted">${s.category?.name || ''}</span></div>
+      ${s.tableNumber ? `<div class="info-item" style="background:var(--surface)"><div class="info-item-label">Table</div><div class="info-item-value">${s.tableNumber} · Side ${s.side} · Chair ${s.sidePosition}</div></div>` : ''}
+      <div class="flex gap-8 mt-8">
+        ${!s.isOccupied ? `<button class="btn btn-sm ${s.isReserved ? 'btn-ghost' : 'btn-ghost'} w-full" id="btn-toggle-reserve">
+          ${s.isReserved ? '🔓 Unreserve' : '🔒 Reserve'}
+        </button>` : ''}
+        ${currentAdmin?.role === 'SUPER_ADMIN' && !s.isOccupied ? `<button class="btn btn-danger btn-sm w-full" id="btn-del-seat">Delete</button>` : ''}
+      </div>
+    </div>
+  `;
+  openModal('modal-seat');
+  document.getElementById('btn-toggle-reserve')?.addEventListener('click', async () => {
+    try {
+      await API.toggleReserve(id);
+      toast(s.isReserved ? 'Seat unreserved' : 'Seat reserved', 'success');
+      closeModal('modal-seat');
+      loadSeatMap(document.getElementById('map-category-filter').value || undefined);
+    } catch(e) { toast(e.message, 'error'); }
+  });
+  document.getElementById('btn-del-seat')?.addEventListener('click', async () => {
+    if (!await confirm(`Delete seat ${s.seatNumber}?`)) return;
+    try { await API.deleteSeat(id); toast('Seat deleted', 'success'); closeModal('modal-seat'); loadSeatMap(); }
+    catch(e) { toast(e.message, 'error'); }
+  });
+}
+
+document.getElementById('map-category-filter').onchange = function() { loadSeatMap(this.value || undefined); };
+
+// Seat tabs
+document.querySelectorAll('[data-tab]').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['map','summary','create'].forEach(t => {
+      document.getElementById(`seats-tab-${t}`).style.display = btn.dataset.tab === t ? '' : 'none';
+    });
+    if (btn.dataset.tab === 'summary') loadSeatSummary();
+  };
+});
+
+// Solo seat detect
+document.getElementById('seat-category-select').onchange = function() {
+  const cat = categories.find(c => c.id === this.value);
+  const isSolo = cat?.slug === 'SL';
+  document.getElementById('seat-create-table-fields').style.display = isSolo ? 'none' : '';
+  document.getElementById('seat-create-solo-fields').style.display = isSolo ? '' : 'none';
+};
+
+document.getElementById('btn-create-seats').onclick = async () => {
+  const catId = document.getElementById('seat-category-select').value;
+  const cat   = categories.find(c => c.id === catId);
+  if (!catId || !cat) { toast('Select a category', 'error'); return; }
+  const btn = document.getElementById('btn-create-seats');
+  setLoading(btn, true, 'Creating...');
+  try {
+    let payload = { categoryId: catId };
+    if (cat.slug === 'SL') {
+      payload.numberOfSeats = parseInt(document.getElementById('seat-num-solo').value);
+    } else {
+      payload.numberOfTables = parseInt(document.getElementById('seat-num-tables').value);
+      const start = document.getElementById('seat-start-table').value;
+      if (start) payload.startFromTable = parseInt(start);
+    }
+    const seats = await API.createSeats(payload);
+    toast(`Created ${seats.length} seats`, 'success');
+    loadSeatMap();
+  } catch(e) { toast(e.message, 'error'); }
+  finally { setLoading(btn, false); }
+};
+
+// ── Access Codes ──────────────────────────────────────────────
+async function loadCodesPage() {
+  loadCodes();
+}
+
+async function loadCodes() {
+  const params = {};
+  const catFilter  = document.getElementById('codes-category-filter')?.value;
+  const soldFilter = document.getElementById('codes-sold-filter')?.value;
+  const usedFilter = document.getElementById('codes-used-filter')?.value;
+  if (catFilter)  params.categoryId = catFilter;
+  if (soldFilter) params.isSold     = soldFilter;
+  if (usedFilter) params.isUsed     = usedFilter;
+
+  const tbody = document.getElementById('codes-body');
+  tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="loader"></div></div></td></tr>`;
+  try {
+    const codes = await API.getCodes(params);
+    if (!codes?.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🎫</div><h3>No codes</h3></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = codes.slice(0,100).map(c => `
+      <tr>
+        <td><span class="font-mono text-sm">${c.code}</span></td>
+        <td>${zoneBadge(c.category?.slug)}</td>
+        <td>${c.isSold ? `<span class="badge badge-orange">Sold</span>` : `<span class="badge badge-grey">Unsold</span>`}</td>
+        <td>${c.isUsed ? `<span class="badge badge-green">Used</span>` : `<span class="badge badge-grey">—</span>`}</td>
+        <td>
+          ${!c.isSold ? `<button class="btn btn-success btn-sm" onclick="markSold('${c.code}')">Mark Sold</button>` : ''}
+        </td>
+      </tr>
+    `).join('');
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="5" class="text-red text-center">Failed to load</td></tr>`; }
+}
+
+window.markSold = async function(code) {
+  try { await API.markCodeSold(code); toast('Marked as sold', 'success'); loadCodes(); }
+  catch(e) { toast(e.message, 'error'); }
+};
+
+document.getElementById('btn-mark-sold').onclick = async () => {
+  const code = document.getElementById('sell-code').value.trim().toUpperCase();
+  if (!code) { toast('Enter a code', 'error'); return; }
+  await markSold(code);
+  document.getElementById('sell-code').value = '';
+};
+
+document.getElementById('btn-generate').onclick = async () => {
+  const catId = document.getElementById('gen-category').value;
+  const count = parseInt(document.getElementById('gen-count').value);
+  if (!catId) { toast('Select a category', 'error'); return; }
+  if (!count || count < 1) { toast('Enter a valid count', 'error'); return; }
+  const btn = document.getElementById('btn-generate');
+  setLoading(btn, true, 'Generating...');
+  try {
+    const codes = await API.generateCodes(catId, count);
+    toast(`Generated ${codes.length} codes`, 'success');
+    loadCodes();
+  } catch(e) { toast(e.message, 'error'); }
+  finally { setLoading(btn, false); }
+};
+
+['codes-category-filter','codes-sold-filter','codes-used-filter'].forEach(id => {
+  document.getElementById(id)?.addEventListener('change', loadCodes);
+});
+document.getElementById('btn-refresh-codes')?.addEventListener('click', loadCodes);
+document.getElementById('sell-code').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+
+// ── Participants ──────────────────────────────────────────────
+async function loadParticipants() {
+  const tbody = document.getElementById('participants-body');
+  tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="loader"></div></div></td></tr>`;
+  const catId  = document.getElementById('participants-zone-filter')?.value;
+  const params = { page: participantPage, limit: 50 };
+  if (catId) params.categoryId = catId;
+  try {
+    const result = await API.getParticipants(params);
+    const items = Array.isArray(result) ? result : result.data || [];
+    if (!items.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div><h3>No participants</h3></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = items.map(p => {
+      const seat = p.seatAssignment?.seat?.seatNumber || '—';
+      const checkedIn = p.checkIn ? `<span class="badge badge-green">✓</span>` : `<span class="badge badge-grey">—</span>`;
+      return `
+        <tr class="participant-row">
+          <td><strong>${p.fullName}</strong><div class="text-xs text-muted">${p.phoneNumber}</div></td>
+          <td>${zoneBadge(p.accessCode?.category?.slug)}</td>
+          <td><span class="font-mono text-sm text-cyan">${seat}</span></td>
+          <td>${p.gender?.replace(/_/g,' ') || '—'}</td>
+          <td>${checkedIn}</td>
+          <td class="text-xs text-muted">${fmtDate(p.createdAt)}</td>
+        </tr>
+      `;
+    }).join('');
+  } catch(e) { toast('Failed to load participants', 'error'); }
+}
+
+const debouncedSearch = debounce(() => loadParticipants(), 400);
+document.getElementById('participants-search')?.addEventListener('input', debouncedSearch);
+document.getElementById('participants-zone-filter')?.addEventListener('change', loadParticipants);
+document.getElementById('btn-refresh-participants')?.addEventListener('click', loadParticipants);
+
+// ── Check-in ──────────────────────────────────────────────────
+async function loadCheckinPage() {
+  try {
+    const stats = await API.getCheckinStats();
+    document.getElementById('checkin-stats-grid').innerHTML = stats.map(z => {
+      const color = ZONE_COLOR[z.slug] || '#fff';
+      const pct = z.totalRegistered > 0 ? Math.round(z.totalCheckedIn / z.totalRegistered * 100) : 0;
+      return `
+        <div class="stat-card" style="border-top:3px solid ${color}">
+          <div class="stat-label">${z.categoryName}</div>
+          <div class="stat-value" style="color:${color}">${z.totalCheckedIn}</div>
+          <div class="stat-sub">${z.notYetArrived} pending · ${pct}% arrived</div>
+          <div class="progress-bar mt-8"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {}
+
+  await loadCheckins();
+}
+
+async function loadCheckins() {
+  const tbody = document.getElementById('checkin-body');
+  tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="loader"></div></div></td></tr>`;
+  const catId = document.getElementById('checkin-zone-filter')?.value;
+  try {
+    const checkins = await API.getCheckIns(catId ? { categoryId: catId } : {});
+    if (!checkins.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">✅</div><h3>No check-ins yet</h3></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = checkins.map(ci => `
+      <tr>
+        <td><strong>${ci.participant?.fullName || '—'}</strong></td>
+        <td>${zoneBadge(ci.participant?.seatAssignment?.seat?.category?.slug)}</td>
+        <td><span class="font-mono text-cyan text-sm">${ci.participant?.seatAssignment?.seat?.seatNumber || '—'}</span></td>
+        <td><span class="badge badge-grey">${ci.method}</span></td>
+        <td class="text-sm text-muted">${ci.verifiedBy ? ci.verifiedBy.substring(0,8) + '…' : '—'}</td>
+        <td class="text-sm text-muted">${fmtDateTime(ci.checkedInAt)}</td>
+      </tr>
+    `).join('');
+  } catch(e) {}
+}
+
+document.getElementById('checkin-zone-filter')?.addEventListener('change', loadCheckins);
+document.getElementById('btn-refresh-checkin')?.addEventListener('click', loadCheckinPage);
+
+// ── Admins ────────────────────────────────────────────────────
+async function loadAdmins() {
+  const tbody = document.getElementById('admins-body');
+  tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="loader"></div></div></td></tr>`;
+  try {
+    const admins = await API.getAdmins();
+    tbody.innerHTML = admins.map(a => `
+      <tr>
+        <td><strong>${a.name}</strong></td>
+        <td class="text-sm text-muted">${a.email}</td>
+        <td>${roleBadge(a.role)}</td>
+        <td><span class="badge ${a.isActive ? 'badge-green' : 'badge-red'}">${a.isActive ? 'Active' : 'Inactive'}</span></td>
+        <td class="text-sm text-muted">${fmtDate(a.lastLoginAt)}</td>
+        <td>
+          <div class="flex gap-8">
+            <button class="btn btn-ghost btn-sm" onclick="toggleAdmin('${a.id}')">${a.isActive ? 'Deactivate' : 'Activate'}</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteAdmin('${a.id}','${a.name}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  } catch(e) { toast('Failed to load admins', 'error'); }
+}
+
+window.toggleAdmin = async function(id) {
+  try { await API.toggleAdmin(id); toast('Status updated', 'success'); loadAdmins(); }
+  catch(e) { toast(e.message, 'error'); }
+};
+window.deleteAdmin = async function(id, name) {
+  if (!await confirm(`Delete admin "${name}"?`)) return;
+  try { await API.deleteAdmin(id); toast('Admin deleted', 'success'); loadAdmins(); }
+  catch(e) { toast(e.message, 'error'); }
+};
+
+document.getElementById('btn-new-admin').onclick = () => openModal('modal-admin');
+document.getElementById('btn-save-admin').onclick = async () => {
+  const btn = document.getElementById('btn-save-admin');
+  const d = {
+    name:     document.getElementById('new-admin-name').value.trim(),
+    email:    document.getElementById('new-admin-email').value.trim(),
+    password: document.getElementById('new-admin-pass').value,
+    role:     document.getElementById('new-admin-role').value,
+  };
+  if (!d.name || !d.email || !d.password) { toast('All fields required', 'error'); return; }
+  setLoading(btn, true, 'Creating...');
+  try {
+    await API.createAdmin(d);
+    toast('Admin created', 'success');
+    closeModal('modal-admin');
+    loadAdmins();
+  } catch(e) { toast(e.message, 'error'); }
+  finally { setLoading(btn, false); }
+};
+
+// ── Modal helpers ─────────────────────────────────────────────
+window.openModal  = (id) => document.getElementById(id).classList.add('open');
+window.closeModal = (id) => document.getElementById(id).classList.remove('open');
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.classList.remove('open'); };
+});
+</script>
+</body>
+</html>
