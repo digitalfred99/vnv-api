@@ -12,6 +12,8 @@ import { Admin } from "@entities/Admin";
 
 dotenv.config();
 
+const isProd = process.env.NODE_ENV === "production";
+
 export const AppDataSource = new DataSource({
   type: "postgres",
   host: process.env.DB_HOST || "localhost",
@@ -19,8 +21,9 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME || "postgres",
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "vnv_db",
-  synchronize: false,                // Always false in production — use migrations
-  logging: process.env.NODE_ENV === "development",
+  synchronize: true,
+  ssl: isProd ? { rejectUnauthorized: false } : false,
+  logging: !isProd,
   entities: [
     TicketCategory,
     AccessCode,
@@ -30,6 +33,6 @@ export const AppDataSource = new DataSource({
     CheckIn,
     Admin,
   ],
-  migrations: ["src/migrations/*.ts"],
+  migrations: [isProd ? "dist/migrations/*.js" : "src/migrations/*.ts"],
   subscribers: [],
 });
