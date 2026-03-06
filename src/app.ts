@@ -52,7 +52,25 @@ app.options("*", cors({
 }));
 
 // ── Security ──────────────────────────────────────────────────
-app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc:     ["'self'"],
+        scriptSrc:      ["'self'", "'unsafe-inline'", "https://unpkg.com"],
+        scriptSrcAttr:  ["'unsafe-inline'"],
+        styleSrc:       ["'self'", "'unsafe-inline'"],
+        imgSrc:         ["'self'", "data:", "blob:"],
+        connectSrc:     ["'self'"],
+        fontSrc:        ["'self'"],
+        objectSrc:      ["'none'"],
+        mediaSrc:       ["'self'", "blob:"],
+        frameSrc:       ["'none'"],
+      },
+    },
+  })
+);
 
 // ── Rate Limiting ─────────────────────────────────────────────
 const limiter = rateLimit({
