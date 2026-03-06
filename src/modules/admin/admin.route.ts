@@ -9,6 +9,9 @@ const ctrl = new AdminController();
 // ── Public ────────────────────────────────────────────────────
 router.post("/login", (req, res, next) => ctrl.login(req, res, next));
 
+// ── Bootstrap (REMOVE AFTER FIRST DEPLOY) ────────────────────
+router.post("/bootstrap", (req, res, next) => ctrl.create(req, res, next));
+
 // ── Authenticated (any admin) ─────────────────────────────────
 router.get("/me", adminAuth, (req, res, next) => ctrl.getMe(req, res, next));
 router.patch("/me/password", adminAuth, (req, res, next) => ctrl.changePassword(req, res, next));
