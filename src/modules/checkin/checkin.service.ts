@@ -90,8 +90,8 @@ export class CheckInService {
         COUNT(DISTINCT ci.id) AS "totalCheckedIn",
         COUNT(DISTINCT p.id) - COUNT(DISTINCT ci.id) AS "notYetArrived"
       FROM ticket_categories tc
-      LEFT JOIN participants p  ON p.category_id = tc.id
-      LEFT JOIN check_ins ci    ON ci.participant_id = p.id
+      LEFT JOIN participants p  ON p.category_id::text = tc.id::text
+      LEFT JOIN check_ins ci    ON ci.participant_id::text = p.id::text
       GROUP BY tc.id, tc.name, tc.slug, tc.zone_label
       ORDER BY tc.name
     `);

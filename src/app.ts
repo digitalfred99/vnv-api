@@ -54,16 +54,16 @@ app.options("*", cors({
 // ── Security ──────────────────────────────────────────────────
 app.use(
   helmet({
-    crossOriginResourcePolicy: false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc:     ["'self'"],
         scriptSrc:      ["'self'", "'unsafe-inline'", "https://unpkg.com"],
         scriptSrcAttr:  ["'unsafe-inline'"],
-        styleSrc:       ["'self'", "'unsafe-inline'"],
+        styleSrc:       ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        styleSrcElem:   ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc:        ["'self'", "https://fonts.gstatic.com"],
         imgSrc:         ["'self'", "data:", "blob:"],
         connectSrc:     ["'self'"],
-        fontSrc:        ["'self'"],
         objectSrc:      ["'none'"],
         mediaSrc:       ["'self'", "blob:"],
         frameSrc:       ["'none'"],
